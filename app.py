@@ -1,4 +1,6 @@
 import os
+import logging
+from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 import cloudinary
 import cloudinary.utils
@@ -8,13 +10,36 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+app = Flask(__name__, template_folder=str(BASE_DIR / 'templates'))
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Set CLOUDINARY_URL in the environment. Never place the API secret in browser JavaScript.
 cloudinary.config(secure=True)
 
+@app.get('/health')
+def health():
+    template_path = BASE_DIR / 'templates' / 'index.html'
+    return jsonify({
+        'status': 'ok',
+        'template_exists': template_path.exists(),
+        'template_path': str(template_path),
+        'cloudinary_configured': bool(os.getenv('CLOUDINARY_URL')),
+        'brandfetch_configured': bool(os.getenv('BRANDFETCH_API_KEY')),
+        'openai_configured': bool(os.getenv('OPENAI_API_KEY')),
+    })
+
 @app.get('/')
 def index():
+    template_path = BASE_DIR / 'templates' / 'index.html'
+    if not template_path.exists():
+        logger.error('Missing template: %s', template_path)
+        return (
+            'SMART1 Campaign Builder deployment is missing templates/index.html. '
+            'Upload the templates folder beside app.py and leave Render Root Directory blank.',
+            500,
+        )
     return render_template('index.html')
 
 @app.get('/api/cloudinary-config')
@@ -96,6 +121,58 @@ def brandfetch_lookup():
             detail = (exc.response.text or '')[:300]
         return jsonify({'error': 'Brandfetch request failed', 'detail': detail}), 502
 
+
+@app.post('/api/generate-business-description')
+def generate_business_description():
+    api_key = os.getenv('OPENAI_API_KEY', '').strip()
+    if not api_key:
+        return jsonify({'error': 'OpenAI is not configured. Add OPENAI_API_KEY in Render.'}), 503
+    data = request.get_json(force=True) or {}
+    urls = [str(u).strip() for u in (data.get('urls') or []) if str(u).strip()]
+    if not urls:
+        return jsonify({'error': 'At least one website URL is required'}), 400
+    client = str(data.get('client') or '').strip()
+    industry = str(data.get('industry') or '').strip()
+    geography = str(data.get('geo') or '').strip()
+    brand = data.get('brandfetch') or {}
+    prompt = (
+        'Research the business using these official website URLs: ' + ', '.join(urls) + '.\n'
+        'Write a concise, client-ready business description for a digital media insertion order.\n'
+        'Use 2 to 4 sentences and plain language. Explain what the business does, its main products or services, who it serves, and its geographic focus when supported by the website.\n'
+        'Do not invent awards, years in business, locations, claims, or services. Do not include citations or URLs in the final description.\n'
+        f'Known intake details:\nClient name: {client}\nIndustry: {industry}\nGeographic target: {geography}\n'
+        f'Brandfetch description: {brand.get("description", "") if isinstance(brand, dict) else ""}\n'
+        'Return only the finished description.'
+    )
+    payload = {
+        'model': os.getenv('OPENAI_MODEL', 'gpt-5-mini'),
+        'input': prompt,
+        'tools': [{'type': 'web_search'}],
+    }
+    try:
+        response = requests.post(
+            'https://api.openai.com/v1/responses',
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            json=payload,
+            timeout=60,
+        )
+        response.raise_for_status()
+        result = response.json()
+        parts = []
+        for item in result.get('output') or []:
+            for content in item.get('content') or []:
+                if content.get('type') in ('output_text', 'text') and content.get('text'):
+                    parts.append(content['text'])
+        description = '\n'.join(parts).strip()
+        if not description:
+            return jsonify({'error': 'OpenAI returned no description'}), 502
+        return jsonify({'description': description})
+    except requests.RequestException as exc:
+        detail = ''
+        if getattr(exc, 'response', None) is not None:
+            detail = (exc.response.text or '')[:500]
+        return jsonify({'error': 'OpenAI description request failed', 'detail': detail}), 502
+
 @app.post('/api/cloudinary-signature')
 def cloudinary_signature():
     cfg = cloudinary.config()
@@ -111,3 +188,9 @@ def cloudinary_signature():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(exc):
+    logger.exception('Unhandled application error')
+    return jsonify({'error': 'Internal server error', 'type': type(exc).__name__, 'message': str(exc)}), 500
