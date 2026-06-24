@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: insertionordersmart
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: BRANDFETCH_API_KEY
+        sync: false
+      - key: BRANDFETCH_CLIENT_ID
+        sync: false
