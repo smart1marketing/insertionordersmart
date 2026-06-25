@@ -136,11 +136,36 @@ def brandfetch_lookup():
         return jsonify({'error': 'Brandfetch request failed', 'detail': detail}), 502
 
 
+
+def _extract_response_text(result):
+    parts = []
+    for item in result.get("output") or []:
+        for content in item.get("content") or []:
+            if content.get("type") in ("output_text", "text") and content.get("text"):
+                parts.append(content["text"])
+    return "\n".join(parts).strip()
+
+def _openai_response(prompt, max_output_tokens=6000):
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("OpenAI is not configured. Add OPENAI_API_KEY in Render.")
+    payload = {
+        "model": os.getenv("OPENAI_MODEL", "gpt-5-mini"),
+        "input": prompt,
+        "tools": [{"type": "web_search"}],
+        "max_output_tokens": max_output_tokens,
+    }
+    response = requests.post(
+        "https://api.openai.com/v1/responses",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json=payload,
+        timeout=120,
+    )
+    response.raise_for_status()
+    return _extract_response_text(response.json())
+
 @app.post('/api/generate-business-description')
 def generate_business_description():
-    api_key = os.getenv('OPENAI_API_KEY', '').strip()
-    if not api_key:
-        return jsonify({'error': 'OpenAI is not configured. Add OPENAI_API_KEY in Render.'}), 503
     data = request.get_json(force=True) or {}
     urls = [str(u).strip() for u in (data.get('urls') or []) if str(u).strip()]
     if not urls:
@@ -150,42 +175,28 @@ def generate_business_description():
     geography = str(data.get('geo') or '').strip()
     brand = data.get('brandfetch') or {}
     prompt = (
-        'Research the business using these official website URLs: ' + ', '.join(urls) + '.\n'
-        'Write a concise, client-ready business description for a digital media insertion order.\n'
-        'Use 2 to 4 sentences and plain language. Explain what the business does, its main products or services, who it serves, and its geographic focus when supported by the website.\n'
-        'Do not invent awards, years in business, locations, claims, or services. Do not include citations or URLs in the final description.\n'
+        'Research this business carefully using its official website and any clearly authoritative pages linked from it: '
+        + ', '.join(urls) + '.\n'
+        'Write a comprehensive internal business description for the person who will execute a digital advertising campaign. '
+        'Use approximately 2 to 5 short paragraphs. Explain what the company does, its main products and services, the customer problems it solves, '
+        'who its likely customers are, its service area or locations, important differentiators, offers or conversion paths visible on the site, '
+        'and any operational details that would help a media buyer understand the business. '
+        'Mention regulated or restricted categories when relevant. Do not invent unsupported claims, awards, service areas, years in business, or capabilities. '
+        'Do not include citations or raw URLs in the final text.\n'
         f'Known intake details:\nClient name: {client}\nIndustry: {industry}\nGeographic target: {geography}\n'
         f'Brandfetch description: {brand.get("description", "") if isinstance(brand, dict) else ""}\n'
-        'Return only the finished description.'
+        'Return only the finished business description.'
     )
-    payload = {
-        'model': os.getenv('OPENAI_MODEL', 'gpt-5-mini'),
-        'input': prompt,
-        'tools': [{'type': 'web_search'}],
-    }
     try:
-        response = requests.post(
-            'https://api.openai.com/v1/responses',
-            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
-            json=payload,
-            timeout=60,
-        )
-        response.raise_for_status()
-        result = response.json()
-        parts = []
-        for item in result.get('output') or []:
-            for content in item.get('content') or []:
-                if content.get('type') in ('output_text', 'text') and content.get('text'):
-                    parts.append(content['text'])
-        description = '\n'.join(parts).strip()
+        description = _openai_response(prompt, max_output_tokens=5000)
         if not description:
             return jsonify({'error': 'OpenAI returned no description'}), 502
         return jsonify({'description': description})
-    except requests.RequestException as exc:
+    except Exception as exc:
         detail = ''
         if getattr(exc, 'response', None) is not None:
             detail = (exc.response.text or '')[:500]
-        return jsonify({'error': 'OpenAI description request failed', 'detail': detail}), 502
+        return jsonify({'error': 'OpenAI description request failed', 'detail': detail or str(exc)}), 502
 
 @app.post('/api/cloudinary-signature')
 def cloudinary_signature():
@@ -346,6 +357,13 @@ def _build_requirements_pdf(data, doc_type):
 
 
     if doc_type == 'internal':
+        landing_reviews = data.get('landingPageReviews') or []
+        if landing_reviews:
+            story.append(Paragraph('Landing Page Review — Internal Needs', styles['S1H2']))
+            for item in landing_reviews:
+                story.append(_p(f"{item.get('product','Landing page')}: {item.get('url','')}", styles['S1Small']))
+                story.append(_p(item.get('review',''), styles['S1Body']))
+
         warnings = data.get('internalWarnings') or []
         if warnings:
             story.append(Paragraph('Internal Warnings', styles['S1H2']))
@@ -474,3 +492,61 @@ def submit_io():
         "client_pdf_url": client_pdf_url,
         "internal_pdf_url": internal_pdf_url
     })
+
+
+@app.post('/api/zipcodes-in-radius')
+def zipcodes_in_radius():
+    data = request.get_json(force=True) or {}
+    origin = str(data.get('origin') or '').strip()
+    radius = str(data.get('radius') or '').strip()
+    if not origin or not radius:
+        return jsonify({'error': 'Origin city/ZIP and radius are required'}), 400
+    prompt = (
+        f'Find the complete list of United States ZIP Codes whose geographic polygon is fully or partially touched by a {radius}-mile radius '
+        f'centered on {origin}. Include a ZIP Code whenever any portion of that ZIP Code area intersects the radius, not only when its centroid is inside. '
+        'Use current authoritative geographic sources where possible. Return only five-digit ZIP Codes, comma-separated, sorted ascending, with no commentary. '
+        'Be exhaustive and do not intentionally omit any matching ZIP Code. If the exact boundary cannot be verified, include plausible boundary-touching ZIP Codes rather than omitting them.'
+    )
+    try:
+        text = _openai_response(prompt, max_output_tokens=12000)
+        zips = sorted(set(re.findall(r'\b\d{5}\b', text)))
+        if not zips:
+            return jsonify({'error': 'No ZIP Codes were returned'}), 502
+        return jsonify({
+            'zipcodes': ', '.join(zips),
+            'count': len(zips),
+            'warning': 'AI-assisted ZIP-radius results should be reviewed before trafficking because ZIP boundaries and radius intersections can change.'
+        })
+    except Exception as exc:
+        detail = ''
+        if getattr(exc, 'response', None) is not None:
+            detail = (exc.response.text or '')[:500]
+        return jsonify({'error': 'ZIP-radius lookup failed', 'detail': detail or str(exc)}), 502
+
+@app.post('/api/review-landing-page')
+def review_landing_page():
+    data = request.get_json(force=True) or {}
+    url = str(data.get('url') or '').strip()
+    client = str(data.get('client') or '').strip()
+    product = str(data.get('product') or 'Shared campaign landing page').strip()
+    objectives = data.get('objectives') or []
+    if not url:
+        return jsonify({'error': 'Landing-page URL is required'}), 400
+    prompt = (
+        f'Review this campaign landing page: {url}\n'
+        f'Client: {client}\nProduct or use: {product}\nCampaign goals: {", ".join(map(str, objectives))}\n'
+        'Visit the page and evaluate it as a conversion-focused landing page. Determine whether it has a clear primary call to action above the fold and throughout the page. '
+        'Review message match, headline clarity, offer clarity, forms, phone calls, buttons, mobile usability, page speed signals, trust indicators, testimonials, privacy language, '
+        'tracking readiness, distractions, and whether the conversion action is easy to complete. '
+        'Return a concise internal trafficking note with these headings: CTA Status, Strengths, Required Fixes Before Launch, Recommended Improvements, Tracking Checks. '
+        'Be specific and practical. If the page cannot be accessed, say so clearly.'
+    )
+    try:
+        review = _openai_response(prompt, max_output_tokens=5000)
+        return jsonify({'review': review, 'url': url, 'product': product})
+    except Exception as exc:
+        detail = ''
+        if getattr(exc, 'response', None) is not None:
+            detail = (exc.response.text or '')[:500]
+        return jsonify({'error': 'Landing-page review failed', 'detail': detail or str(exc)}), 502
+

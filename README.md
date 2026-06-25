@@ -98,3 +98,16 @@ Creative files can be marked evergreen. Any file that does not match a known spe
 - An internal warning in the campaign report
 - An internal warning in the internal PDF
 - A warning in the exported campaign data and webhook payload
+
+
+## Geo targeting and landing-page review
+
+The builder now supports:
+
+- City/ZIP Code + Radius
+- DMA
+- Other geographic definitions
+
+For radius targeting, the OpenAI Responses API with web search returns a comma-separated ZIP Code list. This is an AI-assisted operational list and should be reviewed before campaign trafficking; an LLM cannot mathematically guarantee every ZIP polygon intersection without an authoritative geospatial boundary dataset.
+
+Every shared or product-specific landing page is reviewed through OpenAI. CTA and conversion recommendations are stored in `landingPageReviews`, displayed under Internal Needs, included in the internal PDF, exported with campaign data, and sent in the GoHighLevel webhook payload.
