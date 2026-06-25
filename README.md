@@ -1,196 +1,100 @@
-import os
-import logging
-from pathlib import Path
-from flask import Flask, render_template, request, jsonify
-import cloudinary
-import cloudinary.utils
-import requests
-from urllib.parse import urlparse
-from dotenv import load_dotenv
+# SMART1 Campaign Builder with Cloudinary uploads
 
-load_dotenv()
+## Security
+The Cloudinary API secret stays on the server. It is never embedded in the HTML or sent to the browser.
 
-BASE_DIR = Path(__file__).resolve().parent
-app = Flask(__name__, template_folder=str(BASE_DIR / 'templates'))
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+## Run locally
+1. Install Python 3.10+.
+2. In this folder run: `pip install -r requirements.txt`
+3. Set the `CLOUDINARY_URL` environment variable in your hosting platform or terminal.
+4. Run: `python app.py`
+5. Open: `http://localhost:8000`
 
-# Set CLOUDINARY_URL in the environment. Never place the API secret in browser JavaScript.
-cloudinary.config(secure=True)
+## Windows PowerShell example
+`$env:CLOUDINARY_URL="cloudinary://YOUR_API_KEY:YOUR_API_SECRET@YOUR_CLOUD_NAME"`
+`python app.py`
 
-@app.get('/health')
-def health():
-    template_path = BASE_DIR / 'templates' / 'index.html'
-    return jsonify({
-        'status': 'ok',
-        'template_exists': template_path.exists(),
-        'template_path': str(template_path),
-        'cloudinary_configured': bool(os.getenv('CLOUDINARY_URL')),
-        'brandfetch_configured': bool(os.getenv('BRANDFETCH_API_KEY')),
-        'openai_configured': bool(os.getenv('OPENAI_API_KEY')),
-    })
+## Deployment
+Deploy this folder to any Python host that supports environment variables (Render, Railway, Azure App Service, AWS, Google Cloud Run, etc.). Add `CLOUDINARY_URL` as a secret environment variable.
 
-@app.get('/')
-def index():
-    template_path = BASE_DIR / 'templates' / 'index.html'
-    if not template_path.exists():
-        logger.error('Missing template: %s', template_path)
-        return (
-            'SMART1 Campaign Builder deployment is missing templates/index.html. '
-            'Upload the templates folder beside app.py and leave Render Root Directory blank.',
-            500,
-        )
-    return render_template('index.html')
-
-@app.get('/api/cloudinary-config')
-def cloudinary_config():
-    cfg = cloudinary.config()
-    if not cfg.cloud_name or not cfg.api_key or not cfg.api_secret:
-        return jsonify({'error': 'Cloudinary is not configured'}), 503
-    return jsonify({'cloud_name': cfg.cloud_name})
+The upload manager supports multiple files, product assignment, creative-coming-later status, dimension/file-size checks, Cloudinary tags, and returned secure asset URLs.
 
 
+## Brandfetch
+Set `BRANDFETCH_API_KEY` and `BRANDFETCH_CLIENT_ID` as server environment variables. The builder uses the business website entered during intake to retrieve the brand name, description, logo, colors, fonts, company data and brand links. These details are included in JSON exports, the customer checklist/PDF and the printable campaign report.
 
-def _extract_brandfetch(payload, requested_domain):
-    logos = payload.get('logos') or []
-    logo_url = ''
-    for logo in logos:
-        for fmt in (logo.get('formats') or []):
-            src = fmt.get('src')
-            if src:
-                logo_url = src
-                break
-        if logo_url:
-            break
-    colors = []
-    for color in payload.get('colors') or []:
-        value = color.get('hex') or color.get('value')
-        if value and value not in colors:
-            colors.append(value)
-    fonts = []
-    for font in payload.get('fonts') or []:
-        name = font.get('name') or font.get('family')
-        if name and name not in fonts:
-            fonts.append(name)
-    links = []
-    for link in payload.get('links') or []:
-        if isinstance(link, dict):
-            links.append({'name': link.get('name') or link.get('type') or '', 'url': link.get('url') or ''})
-        elif isinstance(link, str):
-            links.append({'name': '', 'url': link})
-    company = payload.get('company') or {}
-    return {
-        'status': 'loaded',
-        'name': payload.get('name') or company.get('name') or '',
-        'domain': payload.get('domain') or requested_domain,
-        'description': payload.get('description') or company.get('description') or '',
-        'logo': logo_url,
-        'colors': colors[:12],
-        'fonts': fonts[:12],
-        'links': links[:20],
-        'company': company,
-        'brand_id': payload.get('id') or '',
-        'claimed': payload.get('claimed'),
-        'quality_score': payload.get('qualityScore') or payload.get('quality_score'),
-    }
-
-@app.get('/api/brandfetch')
-def brandfetch_lookup():
-    api_key = os.getenv('BRANDFETCH_API_KEY', '').strip()
-    client_id = os.getenv('BRANDFETCH_CLIENT_ID', '').strip()
-    if not api_key:
-        return jsonify({'error': 'Brandfetch is not configured'}), 503
-    domain = (request.args.get('domain') or '').strip().lower()
-    if '://' in domain:
-        domain = urlparse(domain).hostname or ''
-    domain = domain.removeprefix('www.').split('/')[0]
-    if not domain or '.' not in domain:
-        return jsonify({'error': 'A valid website domain is required'}), 400
-    headers = {'Authorization': f'Bearer {api_key}', 'Accept': 'application/json'}
-    if client_id:
-        headers['X-Client-Id'] = client_id
-    try:
-        response = requests.get(f'https://api.brandfetch.io/v2/brands/domain/{domain}', headers=headers, timeout=20)
-        if response.status_code == 404:
-            return jsonify({'error': f'No Brandfetch profile was found for {domain}'}), 404
-        response.raise_for_status()
-        return jsonify(_extract_brandfetch(response.json(), domain))
-    except requests.RequestException as exc:
-        detail = ''
-        if getattr(exc, 'response', None) is not None:
-            detail = (exc.response.text or '')[:300]
-        return jsonify({'error': 'Brandfetch request failed', 'detail': detail}), 502
+## Landing pages
+The intake asks whether the campaign uses one shared landing page or product-specific landing pages. Product-specific URLs are saved with each media-plan line item.
 
 
-@app.post('/api/generate-business-description')
-def generate_business_description():
-    api_key = os.getenv('OPENAI_API_KEY', '').strip()
-    if not api_key:
-        return jsonify({'error': 'OpenAI is not configured. Add OPENAI_API_KEY in Render.'}), 503
-    data = request.get_json(force=True) or {}
-    urls = [str(u).strip() for u in (data.get('urls') or []) if str(u).strip()]
-    if not urls:
-        return jsonify({'error': 'At least one website URL is required'}), 400
-    client = str(data.get('client') or '').strip()
-    industry = str(data.get('industry') or '').strip()
-    geography = str(data.get('geo') or '').strip()
-    brand = data.get('brandfetch') or {}
-    prompt = (
-        'Research the business using these official website URLs: ' + ', '.join(urls) + '.\n'
-        'Write a concise, client-ready business description for a digital media insertion order.\n'
-        'Use 2 to 4 sentences and plain language. Explain what the business does, its main products or services, who it serves, and its geographic focus when supported by the website.\n'
-        'Do not invent awards, years in business, locations, claims, or services. Do not include citations or URLs in the final description.\n'
-        f'Known intake details:\nClient name: {client}\nIndustry: {industry}\nGeographic target: {geography}\n'
-        f'Brandfetch description: {brand.get("description", "") if isinstance(brand, dict) else ""}\n'
-        'Return only the finished description.'
-    )
-    payload = {
-        'model': os.getenv('OPENAI_MODEL', 'gpt-5-mini'),
-        'input': prompt,
-        'tools': [{'type': 'web_search'}],
-    }
-    try:
-        response = requests.post(
-            'https://api.openai.com/v1/responses',
-            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
-            json=payload,
-            timeout=60,
-        )
-        response.raise_for_status()
-        result = response.json()
-        parts = []
-        for item in result.get('output') or []:
-            for content in item.get('content') or []:
-                if content.get('type') in ('output_text', 'text') and content.get('text'):
-                    parts.append(content['text'])
-        description = '\n'.join(parts).strip()
-        if not description:
-            return jsonify({'error': 'OpenAI returned no description'}), 502
-        return jsonify({'description': description})
-    except requests.RequestException as exc:
-        detail = ''
-        if getattr(exc, 'response', None) is not None:
-            detail = (exc.response.text or '')[:500]
-        return jsonify({'error': 'OpenAI description request failed', 'detail': detail}), 502
-
-@app.post('/api/cloudinary-signature')
-def cloudinary_signature():
-    cfg = cloudinary.config()
-    if not cfg.cloud_name or not cfg.api_key or not cfg.api_secret:
-        return jsonify({'error': 'Cloudinary is not configured'}), 503
-    data = request.get_json(force=True) or {}
-    allowed = {'timestamp', 'folder', 'tags', 'context'}
-    params = {k: data[k] for k in allowed if k in data and data[k] not in (None, '')}
-    if 'timestamp' not in params:
-        return jsonify({'error': 'timestamp is required'}), 400
-    signature = cloudinary.utils.api_sign_request(params, cfg.api_secret)
-    return jsonify({'signature': signature, 'api_key': cfg.api_key, 'cloud_name': cfg.cloud_name})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)
+## Render diagnostics
+After deployment, open `/health`. It should return `status: ok` and `template_exists: true`. If false, confirm `templates/index.html` is committed beside `app.py` and Render Root Directory is blank.
 
 
-@app.errorhandler(Exception)
-def handle_unexpected_error(exc):
-    logger.exception('Unhandled application error')
-    return jsonify({'error': 'Internal server error', 'type': type(exc).__name__, 'message': str(exc)}), 500
+## AI business descriptions
+Add `OPENAI_API_KEY` in Render. The optional `OPENAI_MODEL` defaults to `gpt-5-mini`. The server uses the OpenAI Responses API with web search to review the supplied business website and create a factual business description.
+
+## Product selection
+The UI first shows the all-caps rate-card categories and then shows only the products in the selected category.
+
+
+## v4 UX update
+- The chat input stays pinned at the bottom of the chat column.
+- Multi-answer questions use checkboxes and a Continue button; typing DONE is no longer required.
+- Typing X is retained as a legacy fallback when a text input is visible.
+
+## v5 PDF and document updates
+- All campaign start/end questions use browser date pickers and default to today's date.
+- Internal and customer requirements are generated as true PDFs on the secure Flask server.
+- PDFs are automatically uploaded to Cloudinary and the returned URL is saved in the campaign data.
+- Customer filename: `S1M - <client name>.pdf`
+- Internal filename: `S1M Internal - <client name>.pdf`
+- Both PDFs include a Brandfetch section, brand color swatches, linked logo, brand links on separate lines, and uploaded creative image thumbnails with asset links.
+- The Print IO view includes the same enhanced brand and creative presentation.
+
+
+## Smart 1 Suite / GoHighLevel Webhook
+
+Add this Render environment variable:
+
+- `GHL_WEBHOOK_URL` — the GoHighLevel inbound webhook URL.
+
+When the salesperson selects **Submit Finished IO**, the app:
+
+1. Generates or confirms the customer PDF in Cloudinary.
+2. Generates or confirms the internal PDF in Cloudinary.
+3. Sends the complete campaign record to GoHighLevel.
+4. Includes top-level `client_pdf_url` and `internal_pdf_url` fields for easy workflow mapping.
+5. Includes the full campaign record in `campaign_data`.
+
+Do not place the webhook URL directly in the browser HTML.
+
+
+## Order number sequence
+
+New IOs request the next order number from `/api/next-order-number`, beginning with **10200**.
+
+For the sequence to survive deploys and restarts, the Render service must have a persistent disk mounted at:
+
+- Mount path: `/var/data`
+- Environment variable: `ORDER_COUNTER_FILE=/var/data/smart1_order_counter.json`
+
+The included `render.yaml` defines a 1 GB persistent disk. Render persistent disks may require a paid service plan.
+
+## Variable monthly budgets
+
+Each product can have a base monthly budget plus one or more dated budget-change periods. The app calculates:
+
+- Current/base monthly spend by product
+- Dated monthly budget schedule
+- Prorated total campaign budget by product
+- Total campaign budget across all products
+
+## Creative warnings
+
+Creative files can be marked evergreen. Any file that does not match a known specification creates:
+
+- A SMART1Snap validation warning on the upload screen
+- An internal warning in the campaign report
+- An internal warning in the internal PDF
+- A warning in the exported campaign data and webhook payload

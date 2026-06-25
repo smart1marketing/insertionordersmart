@@ -97,7 +97,7 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
 .upload-box label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:9px 0 4px}.upload-box select,.upload-box input,.upload-box textarea{width:100%;padding:9px;border:1px solid #b8c6d5;border-radius:6px;font:inherit}
 .upload-actions{display:flex;gap:8px;align-items:center;margin-top:12px}.upload-actions button{border:0;border-radius:7px;padding:10px 13px;font-weight:700;cursor:pointer}.upload-primary{background:var(--blue);color:#fff}.upload-secondary{background:#eef3f8;color:var(--navy)}
 .asset-list{margin-top:16px}.asset-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:9px}.asset-top{display:flex;justify-content:space-between;gap:12px}.ok{color:#157347;font-weight:700}.warn{color:#a15c00;font-weight:700}.pending{color:#66758a;font-weight:700}
-.progress-line{height:7px;background:#e8edf3;border-radius:9px;overflow:hidden;margin-top:8px}.progress-line div{height:100%;background:var(--blue);width:0}.tiny{font-size:11px;color:var(--muted);line-height:1.4}.url-field{display:flex;gap:6px;margin-top:7px}.url-field input{flex:1}
+.progress-line{height:7px;background:#e8edf3;border-radius:9px;overflow:hidden;margin-top:8px}.progress-line div{height:100%;background:var(--blue);width:0}.tiny{font-size:11px;color:var(--muted);line-height:1.4}.url-field{display:flex;gap:6px;margin-top:7px}.url-field input{flex:1}.brand-colors{display:flex;flex-wrap:wrap;gap:8px}.brand-color{display:inline-flex;align-items:center;gap:5px;font-size:11px}.brand-swatch{width:18px;height:18px;border:1px solid #9aa7b5;border-radius:3px}.brand-logo-img{max-width:180px;max-height:80px;display:block;margin:4px 0}.creative-thumb{width:64px;height:48px;object-fit:contain;border:1px solid #d5dee9;border-radius:4px;background:#fff;margin-bottom:4px}
 @media(max-width:780px){.upload-grid{grid-template-columns:1fr}.upload-box.wide{grid-column:auto}}
 
 .creative-checklist{border:1px solid var(--line);border-top:0;padding:12px}.check-product{margin-bottom:16px}.check-product h3{font-size:13px;color:var(--navy);margin:0 0 8px}.check-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #edf1f5;font-size:12px}.check-item input{margin-top:2px}.check-item.done span{text-decoration:line-through;color:var(--muted)}
@@ -106,6 +106,13 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
  header,.chat-panel,.toolbar{display:none!important}.app{display:block;height:auto}.output-panel{padding:0;overflow:visible}
  .report{box-shadow:none;max-width:none;padding:8px}.section{break-inside:avoid}.report-head{margin-top:0}
 }
+
+.submit-io-btn{background:#178653!important;color:#fff!important}
+.submit-status{font-size:12px;padding:7px 9px;border-radius:6px;margin:5px 0;text-align:center;display:none}
+.submit-status.show{display:block}
+.submit-status.ok{background:#e6f5ed;color:#11653d}
+.submit-status.error{background:#fdeaea;color:#9b1c1c}
+
 </style>
 </head>
 <body>
@@ -131,12 +138,14 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
   <button class="secondary" onclick="openCreativeManager()">Creative</button>
   <button class="secondary" onclick="openEditor()">Edit</button>
   <button class="secondary" onclick="restart()">Reset</button>
-  <button class="secondary" onclick="downloadRequirements()">Internal Needs</button>
-  <button class="secondary" onclick="printCustomerRequirements()">Customer PDF</button>
+  <button class="secondary" onclick="generateStoredPDF('internal')">Internal PDF</button>
+  <button class="secondary" onclick="generateStoredPDF('client')">Customer PDF</button>
   <button class="secondary" onclick="copyCustomerRequirements()">Copy Customer</button>
   <button class="secondary" onclick="downloadJSON()">Data Export</button>
+  <button class="submit-io-btn" onclick="submitCompletedIO()">Submit Finished IO</button>
   <button onclick="window.print()">Print IO</button>
  </div>
+ <div id="submitStatus" class="submit-status"></div>
  <div class="report">
   <div class="report-head">
    <div><div class="brand">SMART1 MARKETING</div><div class="sub">Campaign Planning & Rate-Card Insertion Order Report</div></div>
@@ -148,6 +157,7 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
    <div class="grid">
     <div class="field"><div class="label">Today's Date</div><div class="value" id="f-date">—</div></div>
     <div class="field"><div class="label">IO Type</div><div class="value" id="f-io-type">—</div></div>
+    <div class="field"><div class="label">Order Number</div><div class="value" id="f-order-number">—</div></div>
     <div class="field"><div class="label">Media Partner</div><div class="value" id="f-partner">—</div></div>
     <div class="field"><div class="label">Sales / Contact Person</div><div class="value" id="f-sales-contact">—</div></div>
     <div class="field wide"><div class="label">Sales / Contact Email</div><div class="value" id="f-sales-email">—</div></div>
@@ -201,11 +211,12 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
   <div class="section">
    <div class="section-title">Media Plan & Estimated Delivery</div>
    <table>
-    <thead><tr><th>Product</th><th>Campaign Dates</th><th>Monthly Budget / Fee</th><th>Rate</th><th>Estimated Monthly Delivery</th></tr></thead>
-    <tbody id="mediaRows"><tr><td colspan="5" class="empty">Products will appear as they are added.</td></tr></tbody>
+    <thead><tr><th>Product</th><th>Campaign Dates</th><th>Monthly Spend / Schedule</th><th>Rate</th><th>Monthly Delivery</th><th>Total Campaign Budget</th></tr></thead>
+    <tbody id="mediaRows"><tr><td colspan="6" class="empty">Products will appear as they are added.</td></tr></tbody>
    </table>
    <div class="total-row"><div>
     Total Monthly Investment: <strong id="f-monthly-total">$0.00</strong><br>
+    Total Campaign Budget: <strong id="f-campaign-total">$0.00</strong><br>
     Estimated Monthly Paid-Media Delivery: <strong id="f-delivery-total">0</strong>
    </div></div>
   </div>
@@ -254,6 +265,10 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
    </div>
   </div>
 
+  <div class="section">
+   <div class="section-title">Internal Warnings</div>
+   <div id="internalWarnings" class="strategy-list"><div class="empty">No internal warnings.</div></div>
+  </div>
   <div class="section">
    <div class="section-title">SMART1 Strategic Recommendations</div>
    <ul class="strategy-list" id="recommendations"><li class="empty">Recommendations will be generated when the campaign intake is complete.</li></ul>
@@ -357,9 +372,9 @@ const industryIdeas={
 const incomeOptions=["No income targeting","Under $50,000","$50,000–$74,999","$75,000–$99,999","$100,000–$149,999","$150,000–$199,999","$200,000+"];
 const daypartOptions=["No dayparting — run all day","Weekdays only","Business hours","Evenings","Weekends","Custom schedule"];
 const state={
- date:new Date().toLocaleDateString("en-US"),ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",geo:"",industry:"",descriptionMode:"",description:"",
+ date:new Date().toLocaleDateString("en-US"),orderNumber:"",ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",geo:"",industry:"",descriptionMode:"",description:"",
  sameDates:null,start:"",end:"",dayparting:"",objectives:[],kpis:[],creativeSource:"",gender:"",ages:[],income:[],audiences:[],audienceNotes:"",
- selectedCategories:[],currentCategory:"",selected:[],items:[],creativeAssets:[],creativeChecklist:{},aiDescription:"",exclusions:"",strategy:{},recommendations:[]
+ selectedCategories:[],currentCategory:"",selected:[],items:[],creativeAssets:[],creativeChecklist:{},internalWarnings:[],generatedDocuments:{},aiDescription:"",exclusions:"",strategy:{},recommendations:[]
 };
 
 let flow=[],index=0,currentProduct=0,tempItem=null,finished=false;
@@ -368,6 +383,7 @@ const messages=document.getElementById("messages"),answer=document.getElementByI
 function baseFlow(){
  return[
   {key:"ioType",q:"Is this a New IO or a Revised IO?",options:["New IO","Revised IO"]},
+  {key:"existingOrderNumber",q:"What is the existing order number?",condition:()=>state.ioType==="Revised IO"},
   {key:"salesContact",q:"Who is the Sales / Contact person?"},
   {key:"salesEmail",q:"What is their email address?"},
   {key:"partner",q:"What is the media partner name?",default:"Smart 1 Marketing"},
@@ -447,6 +463,16 @@ function suggestedAudienceOptions(){
  ];
  return [...new Set([...(base.behavioral||[]),...(base.contextual||[]),...extras])];
 }
+
+async function allocateOrderNumber(){
+ if(state.orderNumber)return state.orderNumber;
+ const response=await fetch("/api/next-order-number",{method:"POST"});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!result.ok||!result.order_number)throw new Error(result.error||"Unable to create an order number.");
+ state.orderNumber=String(result.order_number);
+ return state.orderNumber;
+}
+
 function addMsg(text,who="bot"){
  const d=document.createElement("div");d.className="msg "+who;d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight
 }
@@ -540,12 +566,20 @@ Type Y to use this description, or enter your own.`,suggestion};
  }
  if(currentProduct<state.selected.length){
   const product=state.selected[currentProduct],cfg=productConfig[product];
-  if(!tempItem)tempItem={product,budget:null,rate:null,start:state.sameDates?state.start:"",end:state.sameDates?state.end:"",landingUrl:state.landingMode==="One landing page"?state.landingUrl:"",listedRate:cfg.listedRate,description:cfg.description,requirements:cfg.requirements,timeline:cfg.timeline};
+  if(!tempItem)tempItem={product,budget:null,rate:null,budgetChangesAsked:null,budgetChanges:[],pendingBudgetChange:null,start:state.sameDates?state.start:"",end:state.sameDates?state.end:"",landingUrl:state.landingMode==="One landing page"?state.landingUrl:"",listedRate:cfg.listedRate,description:cfg.description,requirements:cfg.requirements,timeline:cfg.timeline};
   if(!state.sameDates&&!tempItem.start)return{key:"productStart",q:`What is the campaign start date for ${cfg.product}? Use MM/DD/YYYY.`};
   if(!state.sameDates&&!tempItem.end)return{key:"productEnd",q:`What is the campaign end date for ${cfg.product}? Use MM/DD/YYYY.`};
   if(state.landingMode==="Multiple landing pages by product"&&!tempItem.landingUrl)return{key:"productLandingUrl",q:`What landing-page URL should be used for ${cfg.product}?`};
   if(tempItem.budget===null)return{key:"productBudget",q:`The listed rate for ${cfg.product} is ${cfg.listedRate}. What monthly budget or fee should appear on the IO?`,suggestion:extractSuggestedBudget(cfg.listedRate)};
   if((cfg.rate==="CPM"||cfg.rate==="CPV")&&tempItem.rate===null)return{key:"productRate",q:`The rate card recommends ${cfg.listedRate}. Type Y to use the recommended ${cfg.rate} of ${cfg.defaultRate}, or enter your own ${cfg.rate}.`,suggestion:String(cfg.defaultRate)};
+  if(tempItem.budgetChangesAsked===null)return{key:"productBudgetChanges",q:`Will the monthly budget for ${cfg.product} change during the campaign?`,options:["Yes","No"]};
+  if(tempItem.budgetChangesAsked===true){
+   if(!tempItem.pendingBudgetChange)tempItem.pendingBudgetChange={start:"",end:"",budget:null};
+   if(!tempItem.pendingBudgetChange.start)return{key:"budgetChangeStart",q:`What date does the changed budget begin for ${cfg.product}?`};
+   if(!tempItem.pendingBudgetChange.end)return{key:"budgetChangeEnd",q:`What date does this changed budget end for ${cfg.product}?`};
+   if(tempItem.pendingBudgetChange.budget===null)return{key:"budgetChangeAmount",q:`What monthly budget applies from ${tempItem.pendingBudgetChange.start} through ${tempItem.pendingBudgetChange.end}?`};
+   return{key:"moreBudgetChanges",q:`Add another budget change for ${cfg.product}?`,options:["Yes","No"]};
+  }
   return{key:"completeProduct",q:""};
  }
  return null;
@@ -572,7 +606,11 @@ function ask(){
  }
  inputRow.style.display="flex";
  if(opts)showOptions(opts.filter(Boolean));
- answer.placeholder="Type your answer…";answer.focus();
+ const isDate=["start","end","productStart","productEnd","budgetChangeStart","budgetChangeEnd"].includes(q.key);
+ answer.type=isDate?"date":"text";
+ answer.placeholder=isDate?"Select a date":"Type your answer…";
+ if(isDate&&!answer.value)answer.value=new Date().toISOString().slice(0,10);
+ answer.focus();
  messages.scrollTop=messages.scrollHeight;
 }
 async function submit(raw){
@@ -587,6 +625,20 @@ async function submit(raw){
  }
  if(val.toUpperCase()==="Y" && recommended!==null)val=recommended;
  addMsg(val,"user");
+
+ 
+ if(q.key==="ioType"){
+  state.ioType=val;
+  if(val==="New IO"){
+   addMsg("Creating the next order number…");
+   try{await allocateOrderNumber();addMsg(`Order ${state.orderNumber} created.`)}
+   catch(err){addMsg(`Order number warning: ${err.message}`)}
+  }
+  index++;render();ask();return
+ }
+ if(q.key==="existingOrderNumber"){
+  state.orderNumber=val;index++;render();ask();return
+ }
 
  if(q.key==="sameDates"){
   state.sameDates=/^y(es)?$/i.test(val);if(!state.sameDates){state.start="";state.end=""}
@@ -674,6 +726,21 @@ async function submit(raw){
   }else index++;
   render();ask();return
  }
+ 
+ if(q.key==="productBudgetChanges"){
+  tempItem.budgetChangesAsked=/^y(es)?$/i.test(val);
+  if(!tempItem.budgetChangesAsked)tempItem.pendingBudgetChange=null;
+  ask();return
+ }
+ if(q.key==="budgetChangeStart"){tempItem.pendingBudgetChange.start=val;ask();return}
+ if(q.key==="budgetChangeEnd"){tempItem.pendingBudgetChange.end=val;ask();return}
+ if(q.key==="budgetChangeAmount"){tempItem.pendingBudgetChange.budget=num(val);ask();return}
+ if(q.key==="moreBudgetChanges"){
+  tempItem.budgetChanges.push({...tempItem.pendingBudgetChange});
+  if(/^y(es)?$/i.test(val)){tempItem.pendingBudgetChange={start:"",end:"",budget:null};ask();return}
+  tempItem.pendingBudgetChange=null;tempItem.budgetChangesAsked=false;ask();return
+ }
+
  if(q.key==="productBudget"){tempItem.budget=num(val);ask();return}
  if(q.key==="productRate"){tempItem.rate=num(val);ask();return}
 
@@ -699,15 +766,42 @@ function campaignLength(){
  if(!starts.length||!ends.length)return{days:0,weeks:0,months:1};
  return lengthFor(new Date(Math.min(...starts)).toLocaleDateString(),new Date(Math.max(...ends)).toLocaleDateString())
 }
+function activeMonthlyBudget(item,date){
+ const t=new Date(date).getTime();
+ const change=(item.budgetChanges||[]).find(c=>{
+  const a=new Date(c.start).getTime(),b=new Date(c.end).getTime();
+  return !isNaN(a)&&!isNaN(b)&&t>=a&&t<=b;
+ });
+ return change?Number(change.budget||0):Number(item.budget||0);
+}
+function budgetScheduleText(item){
+ const lines=[`Base monthly budget: ${money(item.budget||0)}`];
+ (item.budgetChanges||[]).forEach(c=>lines.push(`${c.start} to ${c.end}: ${money(c.budget||0)} per month`));
+ return lines.join(" | ");
+}
 function recalculateItem(item){
- const cfg=productConfig[item.product],len=lengthFor(item.start,item.end),months=len.months||1;
- item.campaignBudget=(item.budget||0)*months;
+ const cfg=productConfig[item.product],len=lengthFor(item.start,item.end);
+ item.monthlyBudget=item.budget||0;
+ item.campaignBudget=0;
+ const a=new Date(item.start),b=new Date(item.end);
+ if(!isNaN(a)&&!isNaN(b)&&b>=a){
+  for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)){
+   item.campaignBudget+=activeMonthlyBudget(item,d)/30.4375;
+  }
+ }else item.campaignBudget=item.budget||0;
  item.monthlyDelivery=null;item.campaignDelivery=null;
- if(cfg.rate==="CPM"&&item.rate>0){item.monthlyDelivery=((item.budget||0)/item.rate)*1000;item.campaignDelivery=item.monthlyDelivery*months}
- else if(cfg.rate==="CPV"&&item.rate>0){item.monthlyDelivery=(item.budget||0)/item.rate;item.campaignDelivery=item.monthlyDelivery*months}
+ if(cfg.rate==="CPM"&&item.rate>0){
+  item.monthlyDelivery=((item.budget||0)/item.rate)*1000;
+  item.campaignDelivery=(item.campaignBudget/item.rate)*1000;
+ }else if(cfg.rate==="CPV"&&item.rate>0){
+  item.monthlyDelivery=(item.budget||0)/item.rate;
+  item.campaignDelivery=item.campaignBudget/item.rate;
+ }
  return item
 }
 function completeProduct(){
+ if(tempItem.pendingBudgetChange&&tempItem.pendingBudgetChange.budget!==null)tempItem.budgetChanges.push({...tempItem.pendingBudgetChange});
+ tempItem.pendingBudgetChange=null;
  recalculateItem(tempItem);
  state.items.push(tempItem);tempItem=null;currentProduct++;render();ask()
 }
@@ -786,10 +880,10 @@ function updateProgress(){
 function render(){
  state.items.forEach(recalculateItem);
  text("f-landing-pages",state.landingMode==="One landing page"?(state.landingUrl||"—"):state.items.map(i=>`${(productConfig[i.product]||{}).product||i.product}: ${i.landingUrl||"—"}`).join("\n"));
- text("f-date",state.date);text("f-io-type",state.ioType);text("f-partner",state.partner);text("f-sales-contact",state.salesContact);text("f-sales-email",state.salesEmail);text("f-client",state.client);text("f-url",state.url);
- const b=state.brandfetch||{};text("f-brand-name",b.name);text("f-brand-domain",b.domain||normalizeWebsiteDomain(state.url));text("f-brand-description",b.description);text("f-brand-colors",(b.colors||[]).join(", "));text("f-brand-fonts",(b.fonts||[]).join(", "));
- const logoEl=document.getElementById("f-brand-logo");if(logoEl)logoEl.innerHTML=b.logo?`<a href="${esc(b.logo)}" target="_blank">Open logo / brand asset</a><br><small>${esc(b.logo)}</small>`:"—";
- text("f-brand-links",(b.links||[]).map(x=>typeof x==="string"?x:(x.name?x.name+": ":"")+(x.url||"")).join("\n"));
+ text("f-date",state.date);text("f-io-type",state.ioType);text("f-order-number",state.orderNumber);text("f-partner",state.partner);text("f-sales-contact",state.salesContact);text("f-sales-email",state.salesEmail);text("f-client",state.client);text("f-url",state.url);
+ const b=state.brandfetch||{};text("f-brand-name",b.name);text("f-brand-domain",b.domain||normalizeWebsiteDomain(state.url));text("f-brand-description",b.description);const colorEl=document.getElementById("f-brand-colors");if(colorEl)colorEl.innerHTML=(b.colors||[]).length?`<div class="brand-colors">${(b.colors||[]).map(c=>`<span class="brand-color"><span class="brand-swatch" style="background:${esc(c)}"></span>${esc(c)}</span>`).join("")}</div>`:"—";text("f-brand-fonts",(b.fonts||[]).join(", "));
+ const logoEl=document.getElementById("f-brand-logo");if(logoEl)logoEl.innerHTML=b.logo?`<a href="${esc(b.logo)}" target="_blank"><img class="brand-logo-img" src="${esc(b.logo)}" alt="Brand logo">Open full logo</a><br><small>${esc(b.logo)}</small>`:"—";
+ const linksEl=document.getElementById("f-brand-links");if(linksEl)linksEl.innerHTML=(b.links||[]).length?(b.links||[]).map(x=>{const u=typeof x==="string"?x:(x.url||"");const n=typeof x==="string"?x:((x.name?x.name+": ":"")+u);return u?`<a href="${esc(u)}" target="_blank">${esc(n)}</a>`:esc(n)}).join("<br>"):"—";
  text("f-geo",state.geo);text("f-industry",state.industry);text("f-description",state.description);
  text("f-objective",state.objectives.join(", "));text("f-kpi",state.kpis.join(", "));text("f-creative-source",state.creativeSource);
  text("f-gender",state.gender);text("f-age",state.ages.join(", "));text("f-income",state.income.length?state.income.join(", "):"No income filter");
@@ -811,10 +905,10 @@ function render(){
   const unit=cfg.rate==="CPV"?"views":"impressions";
   const monthly=i.monthlyDelivery?`${whole(i.monthlyDelivery)} ${unit}`:"Performance / service based";
   const details=[cfg.description,cfg.requirements?`Requirements: ${cfg.requirements}`:'',cfg.timeline?`Launch: ${cfg.timeline}`:''].filter(Boolean).join(' | ');
-  return`<tr><td><strong>${esc(cfg.product)}</strong><br><small>${esc(cfg.category)}</small><br><small>${esc(details)}</small><br><small><strong>Landing page:</strong> ${esc(i.landingUrl||state.landingUrl||"—")}</small></td><td>${esc(i.start||"—")}<br>to<br>${esc(i.end||"—")}</td><td class="money">${money(i.budget)}</td><td>${esc(rate)}</td><td class="number">${monthly}</td></tr>`
+  return`<tr><td><strong>${esc(cfg.product)}</strong><br><small>${esc(cfg.category)}</small><br><small>${esc(details)}</small><br><small><strong>Landing page:</strong> ${esc(i.landingUrl||state.landingUrl||"—")}</small></td><td>${esc(i.start||"—")}<br>to<br>${esc(i.end||"—")}</td><td>${esc(budgetScheduleText(i))}</td><td>${esc(rate)}</td><td class="number">${monthly}</td><td class="money">${money(i.campaignBudget)}</td></tr>`
  }).join("");
- const monthly=state.items.reduce((a,b)=>a+(b.budget||0),0),delivery=state.items.reduce((a,b)=>a+(b.monthlyDelivery||0),0);
- text("f-monthly-total",money(monthly));text("f-delivery-total",whole(delivery));
+ const monthly=state.items.reduce((a,b)=>a+(b.budget||0),0),campaignTotal=state.items.reduce((a,b)=>a+(b.campaignBudget||0),0),delivery=state.items.reduce((a,b)=>a+(b.monthlyDelivery||0),0);
+ text("f-monthly-total",money(monthly));text("f-campaign-total",money(campaignTotal));text("f-delivery-total",whole(delivery));
  text("f-primary-kpi",state.kpis.join(", "));
  const secondary=allRecommendedKPIs().filter(k=>!state.kpis.includes(k));
  text("f-secondary-kpis",secondary.join(", "));
@@ -826,6 +920,8 @@ function render(){
  const rec=document.getElementById("recommendations");
  if(state.recommendations.length)rec.innerHTML=state.recommendations.map(r=>`<li>${esc(r)}</li>`).join("");
  renderCreativeChecklist();
+ const warningBox=document.getElementById("internalWarnings");
+ if(warningBox)warningBox.innerHTML=state.internalWarnings.length?state.internalWarnings.map(w=>`<div class="warn" style="padding:6px 0">⚠ ${esc(w)}</div>`).join(""):'<div class="empty">No internal warnings.</div>';
 }
 function creativeChecklistItems(productKey){
  const r=productRequirements(productKey),items=[...(r.creative||[])];
@@ -1102,7 +1198,7 @@ function requirementsPacketHTML(){
    </div>
    <div class="upload-box">
     <strong>Validation behavior</strong>
-    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p>
+    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p><div id="smart1snapValidationWarning" class="callout" style="display:none;margin-top:8px"><strong>SMART1Snap warning:</strong> <span></span></div>
     <div id="uploadConnection" class="callout">Checking secure Cloudinary connection…</div>
    </div>
    <div class="upload-box wide asset-list"><strong>Creative added to this IO</strong><div id="creativeAssetList"></div></div>
@@ -1176,7 +1272,7 @@ function customerRequirementsHTML(){
    </div>
    <div class="upload-box">
     <strong>Validation behavior</strong>
-    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p>
+    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p><div id="smart1snapValidationWarning" class="callout" style="display:none;margin-top:8px"><strong>SMART1Snap warning:</strong> <span></span></div>
     <div id="uploadConnection" class="callout">Checking secure Cloudinary connection…</div>
    </div>
    <div class="upload-box wide asset-list"><strong>Creative added to this IO</strong><div id="creativeAssetList"></div></div>
@@ -1231,7 +1327,7 @@ function openCreativeManager(){
 }
 function closeCreativeManager(){document.getElementById("creativeModal").classList.remove("open")}
 function toggleUploadFields(){document.getElementById("uploadFields").style.display=document.getElementById("creativeStatus").value==="later"?"none":"block"}
-function clearCreativeForm(){document.getElementById("creativeFiles").value="";document.getElementById("creativeNote").value="";document.getElementById("creativeStatus").value="upload";toggleUploadFields()}
+function clearCreativeForm(){document.getElementById("creativeFiles").value="";const ev=document.getElementById("creativeEvergreen");if(ev)ev.checked=false;document.getElementById("creativeNote").value="";document.getElementById("creativeStatus").value="upload";toggleUploadFields()}
 async function checkUploadConnection(){
  const el=document.getElementById("uploadConnection");
  try{const r=await fetch('/api/cloudinary-config');if(!r.ok)throw new Error();const d=await r.json();el.innerHTML=`<strong>Cloudinary connected:</strong> ${esc(d.cloud_name||CLOUDINARY_CLOUD_NAME)}`;el.style.borderLeftColor="#178653"}
@@ -1263,11 +1359,18 @@ async function getSignature(params){
  if(!r.ok)throw new Error((await r.text())||'Unable to create secure upload signature');return r.json()
 }
 async function uploadOneCreative(file,product,note){
- const meta=await inspectMedia(file),validation=validateCreative(file,meta,product),start=campaignStartForProduct(product)||"no_start_date";
+ const meta=await inspectMedia(file),validation=validateCreative(file,meta,product),start=campaignStartForProduct(product)||"no_start_date";const evergreen=!!document.getElementById("creativeEvergreen")?.checked;
  const tags=[slugTag(state.client),slugTag(start),slugTag((productConfig[product]||{}).product||product),"smart1_io_creative"];
  const folder=`smart1_campaigns/${slugTag(state.client)}/${slugTag(start)}`;
- const pending={id:`asset_${Date.now()}_${Math.random().toString(36).slice(2)}`,product,fileName:file.name,status:"uploading",validation:validation.message,validationStatus:validation.status,url:"",bytes:file.size,width:meta.width,height:meta.height,note,tags};
- state.creativeAssets.push(pending);renderCreativeAssets();render();
+ const pending={id:`asset_${Date.now()}_${Math.random().toString(36).slice(2)}`,product,fileName:file.name,status:"uploading",validation:validation.message,validationStatus:validation.status,url:"",bytes:file.size,width:meta.width,height:meta.height,note,tags,evergreen};
+ state.creativeAssets.push(pending);
+ if(validation.status==="warning"){
+  const warning=`${(productConfig[product]||{}).product||product}: ${file.name} — ${validation.message}`;
+  if(!state.internalWarnings.includes(warning))state.internalWarnings.push(warning);
+  const box=document.getElementById("smart1snapValidationWarning");
+  if(box){box.style.display="block";box.querySelector("span").textContent=warning}
+ }
+ renderCreativeAssets();render();
  const params={timestamp:Math.floor(Date.now()/1000),folder,tags:tags.join(','),context:`client=${slugTag(state.client)}|campaign_start=${slugTag(start)}|product=${slugTag((productConfig[product]||{}).product||product)}`};
  try{
   const signed=await getSignature(params),form=new FormData();form.append('file',file);form.append('api_key',signed.api_key);form.append('timestamp',params.timestamp);form.append('signature',signed.signature);form.append('folder',folder);form.append('tags',params.tags);form.append('context',params.context);
@@ -1279,7 +1382,7 @@ async function uploadOneCreative(file,product,note){
 async function handleCreativeAction(){
  const product=document.getElementById("creativeProduct").value,status=document.getElementById("creativeStatus").value,note=document.getElementById("creativeNote").value.trim();if(!product){alert('Select a product.');return}
  if(status==='later'){
-  state.creativeAssets.push({id:`later_${Date.now()}`,product,fileName:"Creative coming later",status:"coming later",validation:"Creative has not been supplied yet.",validationStatus:"pending",url:"",note,tags:[slugTag(state.client),slugTag(campaignStartForProduct(product))]});renderCreativeAssets();render();clearCreativeForm();return
+  state.creativeAssets.push({id:`later_${Date.now()}`,product,fileName:"Creative coming later",status:"coming later",validation:"Creative has not been supplied yet.",validationStatus:"pending",url:"",note,evergreen:!!document.getElementById("creativeEvergreen")?.checked,tags:[slugTag(state.client),slugTag(campaignStartForProduct(product))]});renderCreativeAssets();render();clearCreativeForm();return
  }
  const files=[...document.getElementById("creativeFiles").files];if(!files.length){alert('Choose one or more files.');return}
  for(const f of files)await uploadOneCreative(f,product,note);clearCreativeForm()
@@ -1287,13 +1390,44 @@ async function handleCreativeAction(){
 function renderCreativeAssets(){
  const list=document.getElementById("creativeAssetList"),rows=document.getElementById("creativeRows");if(!list||!rows)return;
  if(!state.creativeAssets.length){list.innerHTML='<p class="tiny">No creative has been added.</p>';rows.innerHTML='<tr><td colspan="5" class="empty">No creative assets uploaded yet.</td></tr>';return}
- list.innerHTML=state.creativeAssets.map(a=>`<div class="asset-item"><div class="asset-top"><div><strong>${esc(a.fileName)}</strong><div class="tiny">${esc((productConfig[a.product]||{}).product||a.product)}</div></div><span class="${a.status==='uploaded'?'ok':a.status==='error'?'warn':'pending'}">${esc(a.status)}</span></div><div class="tiny ${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation||'')}</div>${a.url?`<div class="url-field"><input readonly value="${esc(a.url)}"><button class="upload-secondary" onclick="navigator.clipboard.writeText('${esc(a.url)}')">Copy URL</button></div>`:''}</div>`).join('');
- rows.innerHTML=state.creativeAssets.map(a=>`<tr><td>${esc((productConfig[a.product]||{}).product||a.product)}</td><td>${esc(a.fileName)}</td><td>${esc(a.status)}</td><td class="${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation)}</td><td>${a.url?`<a href="${esc(a.url)}" target="_blank">Open asset</a><br><small>${esc(a.url)}</small>`:'—'}</td></tr>`).join('')
+ list.innerHTML=state.creativeAssets.map(a=>`<div class="asset-item"><div class="asset-top"><div><strong>${esc(a.fileName)}</strong><div class="tiny">${esc((productConfig[a.product]||{}).product||a.product)}</div></div><span class="${a.status==='uploaded'?'ok':a.status==='error'?'warn':'pending'}">${esc(a.status)}</span></div><div class="tiny"><strong>Evergreen:</strong> ${a.evergreen?"Yes":"No"}</div><div class="tiny ${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation||'')}</div>${a.validationStatus==="warning"?`<div class="callout" style="margin-top:7px"><strong>SMART1Snap validation warning:</strong> ${esc(a.validation)}</div>`:""}${a.url?`<div class="url-field"><input readonly value="${esc(a.url)}"><button class="upload-secondary" onclick="navigator.clipboard.writeText('${esc(a.url)}')">Copy URL</button></div>`:''}</div>`).join('');
+ rows.innerHTML=state.creativeAssets.map(a=>{const isImage=a.resourceType==='image'||/\.(png|jpe?g|gif|webp)$/i.test(a.fileName||'');const preview=a.url&&isImage?`<a href="${esc(a.url)}" target="_blank"><img class="creative-thumb" src="${esc(a.url)}" alt="Creative thumbnail"></a>`:'';return `<tr><td>${esc((productConfig[a.product]||{}).product||a.product)}</td><td>${preview}${esc(a.fileName)}</td><td>${esc(a.status)}</td><td class="${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation)}</td><td>${a.url?`<a href="${esc(a.url)}" target="_blank">Open asset</a><br><small>${esc(a.url)}</small>`:'—'}</td></tr>`}).join('')
 }
+
+function customerRequirementItems(){
+ const lines=[
+  'Approved logo, brand colors or brand guidelines, and your best photos or videos',
+  'Main offer or message, call to action, landing page and phone number to promote',
+  'Expiration dates, restrictions, legal wording or required disclaimers',
+  'One person who can approve creative and the contacts who should receive reports or leads',
+  'Competitors, negative keywords, locations, websites, audiences or topics to avoid',
+  'Preferred days or hours for the campaign to run'
+ ];
+ state.selected.forEach(k=>customerItemsForProduct(k).forEach(x=>{if(!lines.includes(x))lines.push(x)}));
+ return lines;
+}
+function internalRequirementSections(){
+ return state.selected.map(k=>{const cfg=productConfig[k]||{};const r=productRequirements(k);return{title:cfg.product||k,items:[...(r.common||[]),...(r.creative||[]),...(r.access||[]),...(r.setup||[])]}});
+}
+async function generateStoredPDF(type){
+ if(!state.client){alert('Enter the client name first.');return}
+ buildStrategy();render();
+ const totalCampaignBudget=state.items.reduce((s,i)=>s+(i.campaignBudget||0),0);const monthlySpend=state.items.reduce((s,i)=>s+(i.budget||0),0);const payload={...state,monthlySpendFormatted:money(monthlySpend),totalCampaignBudgetFormatted:money(totalCampaignBudget),documentType:type,brandfetch:state.brandfetch,creativeAssets:state.creativeAssets.map(a=>({...a,productLabel:(productConfig[a.product]||{}).product||a.product})),customerRequirements:customerRequirementItems(),internalRequirements:internalRequirementSections()};
+ try{
+  const r=await fetch('/api/generate-requirements-pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d=await r.json();if(!r.ok)throw new Error(d.detail||d.error||'PDF creation failed');
+  const label=type==='internal'?'Internal requirements':'Customer PDF';
+  state.generatedDocuments[type]={url:d.url,filename:d.filename,publicId:d.public_id,createdAt:new Date().toISOString()};render();
+  addMsg(`${label} created and stored in Cloudinary: ${d.url}`);
+  window.open(d.url,'_blank');
+ }catch(e){alert(`Unable to create PDF: ${e.message}`)}
+}
+
 function downloadJSON(){
  buildStrategy();render();
  const exportData={...state,brandProfile:state.brandfetch,landingPages:state.items.map(i=>({product:(productConfig[i.product]||{}).product||i.product,url:i.landingUrl||state.landingUrl||""})),campaignLength:campaignLength(),totals:{
   monthly:state.items.reduce((a,b)=>a+(b.budget||0),0),
+  totalCampaignBudget:state.items.reduce((a,b)=>a+(b.campaignBudget||0),0),
   estimatedMonthlyDelivery:state.items.reduce((a,b)=>a+(b.monthlyDelivery||0),0)
  }};
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:"application/json"}),a=document.createElement("a");
@@ -1304,6 +1438,77 @@ flow=baseFlow();
 document.getElementById("send").onclick=()=>submit();
 answer.addEventListener("keydown",e=>{if(e.key==="Enter")submit()});
 render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been filled automatically. I’ll first identify whether this is a new or revised IO and collect the salesperson contact information, then build the campaign plan and product requirements.");ask();
+
+
+async function ensurePdfForWebhook(kind){
+  // Reuse an existing Cloudinary document URL when available.
+  state.documents = state.documents || {};
+  const key = kind === "client" ? "client_pdf_url" : "internal_pdf_url";
+  if(state.documents[key]) return state.documents[key];
+
+  const endpoint = kind === "client" ? "/api/generate-client-pdf" : "/api/generate-internal-pdf";
+  const response = await fetch(endpoint,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(state)
+  });
+  const result = await response.json().catch(()=>({}));
+  if(!response.ok || !result.ok){
+    throw new Error(result.error || `Unable to generate the ${kind} PDF.`);
+  }
+  const url = result.secure_url || result.url || result.pdf_url;
+  if(!url) throw new Error(`The ${kind} PDF was generated, but no Cloudinary URL was returned.`);
+  state.documents[key] = url;
+  return url;
+}
+
+async function submitCompletedIO(){
+  const status=document.getElementById("submitStatus");
+  const setStatus=(message,type)=>{
+    status.textContent=message;
+    status.className=`submit-status show ${type||""}`;
+  };
+  try{
+    setStatus("Creating or confirming both PDFs before submission…","");
+    const clientUrl=await ensurePdfForWebhook("client");
+    const internalUrl=await ensurePdfForWebhook("internal");
+
+    setStatus("Sending the completed IO to Smart 1 Suite…","");
+    const payload={
+      ...state,
+      client_pdf_url:clientUrl,
+      internal_pdf_url:internalUrl,
+      documents:{
+        ...(state.documents||{}),
+        client_pdf_url:clientUrl,
+        internal_pdf_url:internalUrl
+      }
+    };
+
+    const response=await fetch("/api/submit-io",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok || !result.ok){
+      throw new Error(result.error || "The Smart 1 Suite webhook did not accept the IO.");
+    }
+
+    state.submission={
+      status:"submitted",
+      submittedAt:new Date().toISOString(),
+      clientPdfUrl:clientUrl,
+      internalPdfUrl:internalUrl
+    };
+    setStatus("Completed IO sent to Smart 1 Suite successfully.","ok");
+    addMsg("The finished IO, including both Cloudinary PDF links, was sent to Smart 1 Suite.","bot");
+  }catch(error){
+    console.error(error);
+    setStatus(error.message || "Unable to submit the IO.","error");
+  }
+}
+
 </script>
 
 <div class="edit-modal" id="editModal">
@@ -1328,8 +1533,8 @@ render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been fil
    <div class="edit-group">
     <h3>Campaign Dates & Dayparting</h3>
     <label><input type="checkbox" id="e-same-dates"> Same start and end dates for every product</label>
-    <label>Shared Start Date</label><input id="e-start" placeholder="MM/DD/YYYY">
-    <label>Shared End Date</label><input id="e-end" placeholder="MM/DD/YYYY">
+    <label>Shared Start Date</label><input id="e-start" type="date">
+    <label>Shared End Date</label><input id="e-end" type="date">
     <label>Dayparting</label><input id="e-dayparting" placeholder="None, business hours, custom schedule, etc.">
    </div>
    <div class="edit-group">
@@ -1395,7 +1600,7 @@ render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been fil
    </div>
    <div class="upload-box">
     <strong>Validation behavior</strong>
-    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p>
+    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p><div id="smart1snapValidationWarning" class="callout" style="display:none;margin-top:8px"><strong>SMART1Snap warning:</strong> <span></span></div>
     <div id="uploadConnection" class="callout">Checking secure Cloudinary connection…</div>
    </div>
    <div class="upload-box wide asset-list"><strong>Creative added to this IO</strong><div id="creativeAssetList"></div></div>
