@@ -14,12 +14,12 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:
 header{background:var(--navy);color:#fff;padding:17px 26px;display:flex;align-items:center;justify-content:space-between}
 header h1{font-size:21px;margin:0} header span{font-size:12px;opacity:.86}
 .app{display:grid;grid-template-columns:minmax(370px,40%) minmax(600px,60%);height:calc(100vh - 61px)}
-.chat-panel{display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--line)}
+.chat-panel{display:flex;flex-direction:column;background:#fff;border-right:1px solid var(--line);height:calc(100dvh - 61px);min-height:560px;overflow:hidden;position:sticky;top:0}
 .progress-wrap{padding:14px 18px;border-bottom:1px solid var(--line)}
 .progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
 .progress{height:8px;background:#e8edf3;border-radius:20px;overflow:hidden}
 .progress div{height:100%;width:0;background:var(--blue);transition:.25s}
-.messages{flex:1;overflow:auto;padding:20px}
+.messages{flex:1;min-height:0;overflow:auto;padding:20px 20px 110px;scroll-padding-bottom:120px}
 .msg{max-width:88%;padding:11px 13px;border-radius:15px;margin-bottom:11px;line-height:1.45;font-size:14px;white-space:pre-wrap}
 .bot{background:var(--sky);border-bottom-left-radius:4px}
 .user{background:var(--blue);color:#fff;margin-left:auto;border-bottom-right-radius:4px}
@@ -27,7 +27,14 @@ header h1{font-size:21px;margin:0} header span{font-size:12px;opacity:.86}
 .quick{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 14px}
 .quick button{border:1px solid #b7c7d8;background:#fff;color:var(--navy);border-radius:18px;padding:7px 10px;cursor:pointer;font-size:12px}
 .quick button:hover{background:var(--sky)}
-.input-row{display:flex;gap:8px;padding:13px;border-top:1px solid var(--line)}
+.multi-panel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px;margin:3px 0 16px;max-height:390px;overflow:auto;box-shadow:0 4px 14px rgba(20,40,75,.07)}
+.multi-grid{display:grid;grid-template-columns:1fr;gap:6px}
+.multi-option{display:flex;align-items:flex-start;gap:8px;padding:8px 9px;border:1px solid #dce5ee;border-radius:7px;cursor:pointer;font-size:12px;line-height:1.3;background:#fbfcfe}
+.multi-option:hover{background:var(--sky)}.multi-option.selected{border-color:var(--blue);background:#edf5ff}
+.multi-option input{margin-top:2px;flex:0 0 auto}.multi-label{flex:1}.multi-actions{display:flex;gap:7px;position:sticky;bottom:-10px;background:#fff;padding:10px 0 1px;margin-top:8px;border-top:1px solid var(--line)}
+.multi-actions button{border:0;border-radius:7px;padding:9px 12px;cursor:pointer;font-size:12px;font-weight:700}.multi-continue{background:var(--blue);color:#fff}.multi-recommend{background:#eef3f8;color:var(--navy)}
+.multi-summary{font-size:11px;color:var(--muted);margin:3px 0 8px}
+.input-row{display:flex;gap:8px;padding:13px;border-top:1px solid var(--line);background:#fff;position:absolute;left:0;right:0;bottom:0;z-index:25;box-shadow:0 -8px 18px rgba(20,40,75,.08)}
 .input-row input{flex:1;border:1px solid #b6c4d4;border-radius:8px;padding:11px;font-size:14px}
 button{font-family:inherit}
 .send,.toolbar button{border:0;border-radius:7px;padding:10px 13px;cursor:pointer;font-weight:700}
@@ -90,14 +97,41 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
 .upload-box label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:9px 0 4px}.upload-box select,.upload-box input,.upload-box textarea{width:100%;padding:9px;border:1px solid #b8c6d5;border-radius:6px;font:inherit}
 .upload-actions{display:flex;gap:8px;align-items:center;margin-top:12px}.upload-actions button{border:0;border-radius:7px;padding:10px 13px;font-weight:700;cursor:pointer}.upload-primary{background:var(--blue);color:#fff}.upload-secondary{background:#eef3f8;color:var(--navy)}
 .asset-list{margin-top:16px}.asset-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:9px}.asset-top{display:flex;justify-content:space-between;gap:12px}.ok{color:#157347;font-weight:700}.warn{color:#a15c00;font-weight:700}.pending{color:#66758a;font-weight:700}
-.progress-line{height:7px;background:#e8edf3;border-radius:9px;overflow:hidden;margin-top:8px}.progress-line div{height:100%;background:var(--blue);width:0}.tiny{font-size:11px;color:var(--muted);line-height:1.4}.url-field{display:flex;gap:6px;margin-top:7px}.url-field input{flex:1}
+.progress-line{height:7px;background:#e8edf3;border-radius:9px;overflow:hidden;margin-top:8px}.progress-line div{height:100%;background:var(--blue);width:0}.tiny{font-size:11px;color:var(--muted);line-height:1.4}.url-field{display:flex;gap:6px;margin-top:7px}.url-field input{flex:1}.brand-colors{display:flex;flex-wrap:wrap;gap:8px}.brand-color{display:inline-flex;align-items:center;gap:5px;font-size:11px}.brand-swatch{width:18px;height:18px;border:1px solid #9aa7b5;border-radius:3px}.brand-logo-img{max-width:180px;max-height:80px;display:block;margin:4px 0}.creative-thumb{width:64px;height:48px;object-fit:contain;border:1px solid #d5dee9;border-radius:4px;background:#fff;margin-bottom:4px}
 @media(max-width:780px){.upload-grid{grid-template-columns:1fr}.upload-box.wide{grid-column:auto}}
 
-@media(max-width:980px){.toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.app{display:block;height:auto}.chat-panel{height:680px}.output-panel{padding:16px}.cards{grid-template-columns:repeat(2,1fr)}}
+.creative-checklist{border:1px solid var(--line);border-top:0;padding:12px}.check-product{margin-bottom:16px}.check-product h3{font-size:13px;color:var(--navy);margin:0 0 8px}.check-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #edf1f5;font-size:12px}.check-item input{margin-top:2px}.check-item.done span{text-decoration:line-through;color:var(--muted)}
+@media(max-width:980px){.toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.app{display:block;height:auto}.chat-panel{height:calc(100dvh - 61px);min-height:560px;position:relative;top:auto}.output-panel{padding:16px}.cards{grid-template-columns:repeat(2,1fr)}}
 @media print{
  header,.chat-panel,.toolbar{display:none!important}.app{display:block;height:auto}.output-panel{padding:0;overflow:visible}
  .report{box-shadow:none;max-width:none;padding:8px}.section{break-inside:avoid}.report-head{margin-top:0}
 }
+
+.submit-io-btn{background:#178653!important;color:#fff!important}
+.submit-status{font-size:12px;padding:7px 9px;border-radius:6px;margin:5px 0;text-align:center;display:none}
+.submit-status.show{display:block}
+.submit-status.ok{background:#e6f5ed;color:#11653d}
+.submit-status.error{background:#fdeaea;color:#9b1c1c}
+
+
+.answer-control{position:relative;display:flex;flex:1;min-width:0}
+.answer-control input{width:100%;padding-right:48px}
+.calendar-button{
+ display:none;position:absolute;right:5px;top:50%;transform:translateY(-50%);
+ width:38px;height:36px;padding:0;border:1px solid #9fb1c5;border-radius:6px;
+ background:#eef4fa;color:var(--navy);font-size:18px;cursor:pointer;z-index:3
+}
+.calendar-button.show{display:block}
+.answer-control.date-active input{
+ border:2px solid var(--blue);background:#fff;
+ font-weight:700;cursor:pointer;padding-right:52px
+}
+.answer-control.date-active:before{
+ content:"Choose date";position:absolute;left:10px;top:-8px;background:#fff;
+ padding:0 5px;font-size:10px;font-weight:700;color:var(--blue);z-index:2
+}
+input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
+
 </style>
 </head>
 <body>
@@ -112,10 +146,13 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
   <div class="progress"><div id="bar"></div></div>
  </div>
  <div class="messages" id="messages"></div>
- <div class="input-row">
-  <input id="answer" autocomplete="off" placeholder="Type your answer…">
-  <button class="send" id="send">Send</button>
- </div>
+ <div class="input-row" id="inputRow">
+      <div class="answer-control">
+       <input id="answer" autocomplete="off" placeholder="Type your answer…">
+       <button type="button" id="calendarButton" class="calendar-button" aria-label="Open calendar" title="Choose date">📅</button>
+      </div>
+      <button class="send" id="send">Send</button>
+    </div>
 </section>
 
 <section class="output-panel">
@@ -123,12 +160,14 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
   <button class="secondary" onclick="openCreativeManager()">Creative</button>
   <button class="secondary" onclick="openEditor()">Edit</button>
   <button class="secondary" onclick="restart()">Reset</button>
-  <button class="secondary" onclick="downloadRequirements()">Internal Needs</button>
-  <button class="secondary" onclick="printCustomerRequirements()">Customer PDF</button>
+  <button class="secondary" onclick="generateStoredPDF('internal')">Internal PDF</button>
+  <button class="secondary" onclick="generateStoredPDF('client')">Customer PDF</button>
   <button class="secondary" onclick="copyCustomerRequirements()">Copy Customer</button>
   <button class="secondary" onclick="downloadJSON()">Data Export</button>
+  <button class="submit-io-btn" onclick="submitCompletedIO()">Submit Finished IO</button>
   <button onclick="window.print()">Print IO</button>
  </div>
+ <div id="submitStatus" class="submit-status"></div>
  <div class="report">
   <div class="report-head">
    <div><div class="brand">SMART1 MARKETING</div><div class="sub">Campaign Planning & Rate-Card Insertion Order Report</div></div>
@@ -140,6 +179,7 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
    <div class="grid">
     <div class="field"><div class="label">Today's Date</div><div class="value" id="f-date">—</div></div>
     <div class="field"><div class="label">IO Type</div><div class="value" id="f-io-type">—</div></div>
+    <div class="field"><div class="label">Order Number</div><div class="value" id="f-order-number">—</div></div>
     <div class="field"><div class="label">Media Partner</div><div class="value" id="f-partner">—</div></div>
     <div class="field"><div class="label">Sales / Contact Person</div><div class="value" id="f-sales-contact">—</div></div>
     <div class="field wide"><div class="label">Sales / Contact Email</div><div class="value" id="f-sales-email">—</div></div>
@@ -148,6 +188,8 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
     <div class="field wide"><div class="label">Website</div><div class="value" id="f-url">—</div></div>
     <div class="field wide"><div class="label">Landing Page Setup</div><div class="value" id="f-landing-pages">—</div></div>
     <div class="field wide"><div class="label">Geographic Target</div><div class="value" id="f-geo">—</div></div>
+    <div class="field"><div class="label">Geo Type</div><div class="value" id="f-geo-type">—</div></div>
+    <div class="field"><div class="label">ZIP Code Count</div><div class="value" id="f-geo-count">—</div></div>
     <div class="field wide"><div class="label">Business Description</div><div class="value" id="f-description">—</div></div>
     <div class="field"><div class="label">Campaign Goal</div><div class="value" id="f-objective">—</div></div>
     <div class="field"><div class="label">Primary KPI</div><div class="value" id="f-kpi">—</div></div>
@@ -193,11 +235,12 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
   <div class="section">
    <div class="section-title">Media Plan & Estimated Delivery</div>
    <table>
-    <thead><tr><th>Product</th><th>Campaign Dates</th><th>Monthly Budget / Fee</th><th>Rate</th><th>Estimated Monthly Delivery</th></tr></thead>
-    <tbody id="mediaRows"><tr><td colspan="5" class="empty">Products will appear as they are added.</td></tr></tbody>
+    <thead><tr><th>Product</th><th>Campaign Dates</th><th>Monthly Spend / Schedule</th><th>Rate</th><th>Monthly Delivery</th><th>Total Campaign Budget</th></tr></thead>
+    <tbody id="mediaRows"><tr><td colspan="6" class="empty">Products will appear as they are added.</td></tr></tbody>
    </table>
    <div class="total-row"><div>
     Total Monthly Investment: <strong id="f-monthly-total">$0.00</strong><br>
+    Total Campaign Budget: <strong id="f-campaign-total">$0.00</strong><br>
     Estimated Monthly Paid-Media Delivery: <strong id="f-delivery-total">0</strong>
    </div></div>
   </div>
@@ -208,6 +251,11 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
     <thead><tr><th>Product</th><th>File</th><th>Status</th><th>Validation</th><th>Asset URL</th></tr></thead>
     <tbody id="creativeRows"><tr><td colspan="5" class="empty">No creative assets uploaded yet.</td></tr></tbody>
    </table>
+  </div>
+
+  <div class="section">
+   <div class="section-title">Creative Checklist</div>
+   <div class="creative-checklist" id="creativeChecklist"><div class="empty">Select products to build the creative checklist.</div></div>
   </div>
 
   <div class="section">
@@ -242,6 +290,14 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
   </div>
 
   <div class="section">
+   <div class="section-title">Internal Needs — Landing Page Review</div>
+   <div id="landingPageReviews" class="strategy-list"><div class="empty">Landing-page reviews will appear after URLs are entered.</div></div>
+  </div>
+  <div class="section">
+   <div class="section-title">Internal Warnings</div>
+   <div id="internalWarnings" class="strategy-list"><div class="empty">No internal warnings.</div></div>
+  </div>
+  <div class="section">
    <div class="section-title">SMART1 Strategic Recommendations</div>
    <ul class="strategy-list" id="recommendations"><li class="empty">Recommendations will be generated when the campaign intake is complete.</li></ul>
   </div>
@@ -267,6 +323,8 @@ const objectiveKPIs={
 
 const rateCard=[{"label":"PROGRAMMATIC CAMPAIGN — Select Tactics - Comes with Retargeting","category":"PROGRAMMATIC CAMPAIGN","product":"Select Tactics - Comes with Retargeting","listedRate":"5.50 /CPM","retail":"","description":"Creation of Custom Audience with could include Category, Demographic, Behaviorial, Contextual, Job Title, Mobile Category, Mobile Behaviorial, Mobile Geo Fence, and Retargeting.","requirements":"Requires Pixel Placement on Client Website","timeline":"3 Business Days","rateType":"CPM","rateValue":5.5},{"label":"OUTREACH — RON (Run of Network)","category":"OUTREACH","product":"RON (Run of Network)","listedRate":"$3.50 / CPM","retail":"","description":"Geographic Target Only","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":3.5},{"label":"OUTREACH — Category","category":"OUTREACH","product":"Category","listedRate":"$4.25 / CPM","retail":"","description":"Websites your customer would visit regularly.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":4.25},{"label":"OUTREACH — Demographic","category":"OUTREACH","product":"Demographic","listedRate":"$4.25 / CPM","retail":"","description":"Target Gender, Age, or Income Range","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":4.25},{"label":"OUTREACH — Behavioral","category":"OUTREACH","product":"Behavioral","listedRate":"$4.25 / CPM","retail":"","description":"Segments are identified by history of searches and online content consumption.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":4.25},{"label":"OUTREACH — Contextual","category":"OUTREACH","product":"Contextual","listedRate":"$4.25 / CPM","retail":"","description":"Targets ads next to relevent content on a website.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":4.25},{"label":"OUTREACH — Advanced Audience","category":"OUTREACH","product":"Advanced Audience","listedRate":"$5.50 / CPM","retail":"","description":"Combination of Demographic and Behavioral Information to target ads.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":5.5},{"label":"OUTREACH — Native Display","category":"OUTREACH","product":"Native Display","listedRate":"$13.20 / CPM","retail":"","description":"Your message surrounded by content, fully integrated into the natural site experience.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":13.2},{"label":"OUTREACH — Job Title","category":"OUTREACH","product":"Job Title","listedRate":"$7.00 / CPM","retail":"","description":"Targeted ads are served to job title segments as users visit any site across the web.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":7.0},{"label":"OUTREACH — Temperature","category":"OUTREACH","product":"Temperature","listedRate":"$8.00 / CPM","retail":"","description":"Ads served based on Temperature - precipitation or other weather patterns.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":8.0},{"label":"RETARGETING — Website Retargeting","category":"RETARGETING","product":"Website Retargeting","listedRate":"$4.75 / CPM","retail":"","description":"Target previous website visitors as they browse the internet.","requirements":"Requires Pixel Placement on Client Website","timeline":"2 Business Days","rateType":"CPM","rateValue":4.75},{"label":"RETARGETING — Facebook / Instagram Retargeting - No Impression Guarantee - Frequency Cap Allowed","category":"RETARGETING","product":"Facebook / Instagram Retargeting - No Impression Guarantee - Frequency Cap Allowed","listedRate":"25% Mgmt Fee","retail":"","description":"Target previous website visitors on Facebook and Instagram.","requirements":"Requires Facebook Access Requires Pixel Placement on Client Website","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"MOBILE ONLY — RON (Run of Network)","category":"MOBILE ONLY","product":"RON (Run of Network)","listedRate":"$3.50 / CPM","retail":"","description":"Geographic Target Only","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":3.5},{"label":"MOBILE ONLY — Category","category":"MOBILE ONLY","product":"Category","listedRate":"$4.00 / CPM","retail":"","description":"Websites your customer would visit regularly.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":4.0},{"label":"MOBILE ONLY — Behavioral","category":"MOBILE ONLY","product":"Behavioral","listedRate":"$4.00 / CPM","retail":"","description":"Segments are identified by history of searches and online content consumption.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":4.0},{"label":"MOBILE ONLY — In-Store Visits","category":"MOBILE ONLY","product":"In-Store Visits","listedRate":"$9.00 / CPM","retail":"","description":"We find the user online and then track them going to a physical location.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":9.0},{"label":"MOBILE ONLY — Geo-Fence","category":"MOBILE ONLY","product":"Geo-Fence","listedRate":"$5.00 / CPM","retail":"","description":"Pinpoint a target audience within a specific area in real time.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":5.0},{"label":"MOBILE ONLY — Geo-Fence :: Targeted","category":"MOBILE ONLY","product":"Geo-Fence :: Targeted","listedRate":"$5.75 / CPM","retail":"","description":"Pinpoint a target audience within a specific area in real time with either Behavioral or Demographic Targeting.","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":5.75},{"label":"LOCATION LOOKBACK — Demographic","category":"LOCATION LOOKBACK","product":"Demographic","listedRate":"$7.50 / CPM","retail":"","description":"Look Back as early as 2 Weeks up to 1 Year","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":7.5},{"label":"LOCATION LOOKBACK — Behavioral","category":"LOCATION LOOKBACK","product":"Behavioral","listedRate":"$7.50 / CPM","retail":"","description":"Look Back as early as 2 Weeks up to 1 Year","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":7.5},{"label":"LOCATION LOOKBACK — Brand Affinity","category":"LOCATION LOOKBACK","product":"Brand Affinity","listedRate":"$7.50 / CPM","retail":"","description":"Look Back as early as 2 Weeks up to 1 Year","requirements":"Restaurants & Coffee Shops / Automotive / Grocery, Convenience, & Drug Stores / Apparel, Shoes, & Accessories / General Retail / Gas Stations / Financial","timeline":"3 Business Days","rateType":"CPM","rateValue":7.5},{"label":"LOCATION LOOKBACK — List Provided Locations","category":"LOCATION LOOKBACK","product":"List Provided Locations","listedRate":"$7.50 / CPM","retail":"","description":"Look Back 1 Month / 3 Months / 6 Months / 1 Year","requirements":"Must Provide List of Locations","timeline":"3 Business Days","rateType":"CPM","rateValue":7.5},{"label":"OUTREACH — Programmatic - RON (Run of Network)","category":"OUTREACH","product":"Programmatic - RON (Run of Network)","listedRate":"$14.00 / CPM","retail":"","description":"Geographic Target Only","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":14.0},{"label":"OUTREACH — Programmatic - Targeted","category":"OUTREACH","product":"Programmatic - Targeted","listedRate":"$17.00 / CPM","retail":"","description":"Pinpoint a target audience within a specific area with either Behavioral or Demographic Targeting","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":17.0},{"label":"OUTREACH — Premium: Non-Skippable","category":"OUTREACH","product":"Premium: Non-Skippable","listedRate":"$23.00/ CPM","retail":"","description":"Larger Video Players / Premium Spots on Page / Must watch entire video","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":23.0},{"label":"OUTREACH — Premium Native Video","category":"OUTREACH","product":"Premium Native Video","listedRate":"$26.00 / CPM","retail":"","description":"***Does NOT run on CTV - only websites / apps - no streaming services - desktop / mobile / tablets","requirements":"","timeline":"2 Business Days","rateType":"CPM","rateValue":26.0},{"label":"YOUTUBE — TrueView","category":"YOUTUBE","product":"TrueView","listedRate":"$0.20 / CPV","retail":"","description":":12 / :15 / :30 Spots - Only pay when video is watched. Geographic Target Only.","requirements":"YouTube Account Access Required","timeline":"3 Business Days","rateType":"CPV","rateValue":0.2},{"label":"YOUTUBE — TrueView - Targeted","category":"YOUTUBE","product":"TrueView - Targeted","listedRate":"$0.25 / CPV","retail":"","description":":12 / :15 / :30 Spots - Only pay when video is watched. Select Demographic or Behavioral Target.","requirements":"YouTube Account Access Required","timeline":"3 Business Days","rateType":"CPV","rateValue":0.25},{"label":"YOUTUBE — Bumpers","category":"YOUTUBE","product":"Bumpers","listedRate":"$15.00 / CPM","retail":"","description":":06 Spots / Non-Skippable","requirements":"YouTube Account Access Required","timeline":"3 Business Days","rateType":"CPM","rateValue":15.0},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Pay Per Click","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Pay Per Click","listedRate":"15% Mgmt from Retail Cost","retail":"","description":"Text Ads on Google / Bing / Yahoo","requirements":"","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Google Grant","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Google Grant","listedRate":"$125 One time set up fee","retail":"","description":"","requirements":"","timeline":"","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Google Grant","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Google Grant","listedRate":"15% Mgmt fee monthly","retail":"","description":"","requirements":"","timeline":"","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Local Service Ads (LSA)","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Local Service Ads (LSA)","listedRate":"$125 One time set up fee","retail":"","description":"We claim and file the necessary documents for Google.  Have background checks put through and complete the final documents necessary to launch.","requirements":"6 Month Minimum Contract","timeline":"15 Business Days *May take longer due to background checks required by Google.","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Local Service Ads (LSA)","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Local Service Ads (LSA)","listedRate":"15% Mgmt fee monthly","retail":"","description":"","requirements":"6 Month Minimum Contract","timeline":"","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Pay Per Click - Shopping","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Pay Per Click - Shopping","listedRate":"15% Mgmt from Retail Cost","retail":"","description":"Shopping Ads on Google using Merchant Center Feed.","requirements":"Google Merchant Center access required.","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE MARKETING / PAY PER CLICK — Shopping Campaign Merchant Center Set Up","category":"SEARCH ENGINE MARKETING / PAY PER CLICK","product":"Shopping Campaign Merchant Center Set Up","listedRate":"Custom Quote Required","retail":"","description":"Feed that connects shopping campaign to Google.","requirements":"","timeline":"10 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE OPTIMIZATION — Search Engine Optimization","category":"SEARCH ENGINE OPTIMIZATION","product":"Search Engine Optimization","listedRate":"50% of Retail Cost / Custom Quote Required","retail":"","description":"On and Off Site optimizations to increase the volume and quality of traffic to a website from search engines.","requirements":"6 Month Minimum Contract","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE OPTIMIZATION — Local Business Boost","category":"SEARCH ENGINE OPTIMIZATION","product":"Local Business Boost","listedRate":"$75 Per Location / Per Month","retail":"","description":"Claim, Optimize, Manage & Monitor across 50+ directories + Google My Business (GMB) management & optimization + Google review generation (up to 200 texts/mo/location)","requirements":"6 Month Minimum Contract","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE OPTIMIZATION — Additional Location for LBB (Local Business Boost), inclusive of Google Review Generation","category":"SEARCH ENGINE OPTIMIZATION","product":"Additional Location for LBB (Local Business Boost), inclusive of Google Review Generation","listedRate":"$65 Per Location / Per Month","retail":"","description":"Additional location to Local Business Boost package","requirements":"6 Month Minimum Contract","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE OPTIMIZATION — A La Carte :: Local Business Listing Management","category":"SEARCH ENGINE OPTIMIZATION","product":"A La Carte :: Local Business Listing Management","listedRate":"$35.00 Per Location / Per Month","retail":"","description":"Claim, Optimize, Manage & Monitor listings in the search engine results for local searches.","requirements":"6 Month Minimum Contract","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"SEARCH ENGINE OPTIMIZATION — Google Analytics Consultation","category":"SEARCH ENGINE OPTIMIZATION","product":"Google Analytics Consultation","listedRate":"Custom Quote Required","retail":"","description":"Let our experts install / update / repair / create goals within clients Google Analytics.","requirements":"","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"DISPLAY — Facebook | Instagram - Awareness Paid Social Media Advertising","category":"DISPLAY","product":"Facebook | Instagram - Awareness Paid Social Media Advertising","listedRate":"25% Mgmt Fee","retail":"","description":"Geographic Target with clicks to your page or site","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"DISPLAY — Facebook | Instagram - Targeted Paid Social Media Advertising","category":"DISPLAY","product":"Facebook | Instagram - Targeted Paid Social Media Advertising","listedRate":"25% Mgmt Fee","retail":"","description":"Geographic plus one of Demographic or Behavioral tactics implemented to reach a specific audience.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"DISPLAY — Programmatic Paid Social Media Advertising - Budget Based - No Impression Guarantee","category":"DISPLAY","product":"Programmatic Paid Social Media Advertising - Budget Based - No Impression Guarantee","listedRate":"25% Mgmt Fee","retail":"","description":"Blended paid social media paid advertising that allows for more than one tactic to be implemented. Includes Social Media Retargeting","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"DISPLAY — Facebook / Instagram Retargeting - No Impression Guarantee - Frequency Cap Allowed","category":"DISPLAY","product":"Facebook / Instagram Retargeting - No Impression Guarantee - Frequency Cap Allowed","listedRate":"25% Mgmt Fee","retail":"","description":"Target previous website visitors on Facebook and Instagram.","requirements":"Requires Facebook Access Requires Pixel Placement on Client Website","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"DISPLAY — Facebook - Leads","category":"DISPLAY","product":"Facebook - Leads","listedRate":"25% Mgmt Fee","retail":"","description":"Fill out a form in the ad and allow a business to follow up.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"DISPLAY — Facebook - Boosted Posts","category":"DISPLAY","product":"Facebook - Boosted Posts","listedRate":"$20.00 / Per Post","retail":"","description":"Get more people to see and engage with your Post or Page.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"VIDEO — Facebook | Instagram - Paid Social Media Video Advertising","category":"VIDEO","product":"Facebook | Instagram - Paid Social Media Video Advertising","listedRate":"25% Mgmt Fee","retail":"","description":"Share your client goal and a Smart1 will decide what targeting and platform is best suited.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"VIDEO — LinkedIn - Display & Text Ads - Budget Based - No Impression Guarantee","category":"VIDEO","product":"LinkedIn - Display & Text Ads - Budget Based - No Impression Guarantee","listedRate":"25% Mgmt Fee","retail":"","description":"Get your business in front of specific audiences - and drive them to your website or landing page.","requirements":"LinkedIn Access Required","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"VIDEO — Pinterest - Paid Social Media Advertising","category":"VIDEO","product":"Pinterest - Paid Social Media Advertising","listedRate":"25% Management Fee","retail":"","description":"Share your client goal and a Smart1 will decide what targeting is best suited.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"VIDEO — Snapchat - Paid Social Media Advertising","category":"VIDEO","product":"Snapchat - Paid Social Media Advertising","listedRate":"25% Management Fee","retail":"","description":"Share your client goal and a Smart1 will decide what targeting is best suited.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"VIDEO — Twitter - Paid Social Media Advertising","category":"VIDEO","product":"Twitter - Paid Social Media Advertising","listedRate":"25% Management Fee","retail":"","description":"Share your client goal and a Smart1 will decide what targeting is best suited.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"VIDEO — Tik Tok - Paid Social Media Advertising","category":"VIDEO","product":"Tik Tok - Paid Social Media Advertising","listedRate":"25% Management Fee (minimum daily budget of $35 or $1,068 monthly)","retail":"","description":"Share your client goal and a Smart1 will decide what targeting is best suited.","requirements":"Social Media Channels Access Required","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"SOCIAL MEDIA MANAGEMENT — Social Media Management","category":"SOCIAL MEDIA MANAGEMENT","product":"Social Media Management","listedRate":"199.0","retail":"","description":"Cultivate awareness, connections, and engagement on social media channels. Up to 15 posts per month.","requirements":"All Social Media Channels Administrative Access Required.","timeline":"5 Business Days","rateType":null,"rateValue":199.0},{"label":"DISPLAY & VIDEO — IP Targeted Display - List is supplied or purchased seperately","category":"DISPLAY & VIDEO","product":"IP Targeted Display - List is supplied or purchased seperately","listedRate":"18.0","retail":"","description":"Target a users IP address to deliver display ads.","requirements":"30,000 Impression Minimum monthly                                              ( 3 month minimum )","timeline":"3 Business Days","rateType":null,"rateValue":18.0},{"label":"DISPLAY & VIDEO — IP Targeted Display - New Movers","category":"DISPLAY & VIDEO","product":"IP Targeted Display - New Movers","listedRate":"25.0","retail":"","description":"Target new movers to deliver display ads.","requirements":"30,000 Impression Minimum monthly                                              ( 3 month minimum )","timeline":"3 Business Days","rateType":null,"rateValue":25.0},{"label":"DISPLAY & VIDEO — IP Targeted Display - Venue Replay","category":"DISPLAY & VIDEO","product":"IP Targeted Display - Venue Replay","listedRate":"19.5","retail":"","description":"Uses locations to target IP in a unique location/s","requirements":"30,000 Impression Minimum monthly                                              ( 3 month minimum )","timeline":"3 Business Days","rateType":null,"rateValue":19.5},{"label":"DISPLAY & VIDEO — IP Targeted Video - List is supplied or purchased seperately","category":"DISPLAY & VIDEO","product":"IP Targeted Video - List is supplied or purchased seperately","listedRate":"31.0","retail":"","description":"Target a users IP address to deliver video ads.","requirements":"30,000 Impression Minimum monthly                                              ( 3 month minimum )","timeline":"3 Business Days","rateType":null,"rateValue":31.0},{"label":"ADD-ON PRODUCT — Purchase/Rented IP Targeting List","category":"ADD-ON PRODUCT","product":"Purchase/Rented IP Targeting List","listedRate":"Custom Quote Required","retail":"","description":"Purchase of address list to match goals of campaign.","requirements":"","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"DIGITAL RADIO — Programmatic - Targeted - channels may include some or all of the following: iHeart, Pandora, Spotify, Soundcloud etc…  *If you require specifc channel(s) a custom quote is required.","category":"DIGITAL RADIO","product":"Programmatic - Targeted - channels may include some or all of the following: iHeart, Pandora, Spotify, Soundcloud etc…  *If you require specifc channel(s) a custom quote is required.","listedRate":"$18 CPM / add $3 for speciality targeting (niche, dayparting, etc.)","retail":"","description":"Layer a behavioral target on your digital radio spot to find the right audience.","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":18.0},{"label":"DIGITAL RADIO — Programmatic - Run of Site (ROS)","category":"DIGITAL RADIO","product":"Programmatic - Run of Site (ROS)","listedRate":"$13.50 CPM","retail":"","description":"","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":13.5},{"label":"DIGITAL RADIO — Podcasts - Targeted - channels may include some or all of the following: iHeart, Pandora, Spotify, Soundcloud etc…  *If you require specifc channel(s) a custom quote is required.","category":"DIGITAL RADIO","product":"Podcasts - Targeted - channels may include some or all of the following: iHeart, Pandora, Spotify, Soundcloud etc…  *If you require specifc channel(s) a custom quote is required.","listedRate":"$18 CPM /  add $3 for speciality targeting (niche, dayparting, etc.)","retail":"","description":"Layer a behavioral target on your digital radio spot to find the right audience.","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":18.0},{"label":"DIGITAL RADIO — Podcasts - Run of Site (ROS)","category":"DIGITAL RADIO","product":"Podcasts - Run of Site (ROS)","listedRate":"$13.50 CPM","retail":"","description":"","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":13.5},{"label":"DIGITAL RADIO — Optional Companion Banner","category":"DIGITAL RADIO","product":"Optional Companion Banner","listedRate":"Free with other Tactic selected","retail":"","description":"300x250 .jpeg - will run along side of Radio ads when streaming.","requirements":"","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"OTT — Connected TV - Targeted  - This is played on televisions only  *If you require specifc channel(s) a custom quote is required.","category":"OTT","product":"Connected TV - Targeted  - This is played on televisions only  *If you require specifc channel(s) a custom quote is required.","listedRate":"$35.00 / CPM","retail":"","description":"Behavioral or Demographic along with DMA or Larger target.","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":35.0},{"label":"OTT — Advanced TV - Targeted - This is played on all streaming services, all devices and connected apps  *If you require specifc channel(s) a custom quote is required.","category":"OTT","product":"Advanced TV - Targeted - This is played on all streaming services, all devices and connected apps  *If you require specifc channel(s) a custom quote is required.","listedRate":"$25.00 / CPM","retail":"","description":"Full Video Solution inclusive of targeting an audience.","requirements":"","timeline":"3 Business Days","rateType":"CPM","rateValue":25.0},{"label":"EMAIL MARKETING — List Provided Email","category":"EMAIL MARKETING","product":"List Provided Email","listedRate":"$100.00 Per Send","retail":"","description":"Email Blast to emails provided by client.","requirements":"Up to 5,000 Email Addresses","timeline":"3 Business Days","rateType":null,"rateValue":null},{"label":"EMAIL MARKETING — Behavioral Targeted Email - Purchasing Data","category":"EMAIL MARKETING","product":"Behavioral Targeted Email - Purchasing Data","listedRate":"$20.00 / CPM","retail":"","description":"Email Blast to emails purchased by client that match goals of campaign.","requirements":"50,000 Send Minimum","timeline":"5 Business Days","rateType":"CPM","rateValue":20.0},{"label":"ADD-ON PRODUCT — Email Targeting List - Purchasing Data","category":"ADD-ON PRODUCT","product":"Email Targeting List - Purchasing Data","listedRate":"Custom Quote Required","retail":"","description":"Purchase of email list to match goals of campaign.","requirements":"","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"ADD-ON PRODUCT — Email Template Creative Production","category":"ADD-ON PRODUCT","product":"Email Template Creative Production","listedRate":"100.0","retail":"","description":"Includes 1 round of revisions. Edits for supplemental campaigns at $25/each with one round of revisions.","requirements":"","timeline":"5 Business Days","rateType":null,"rateValue":100.0},{"label":"ADD-ON PRODUCT — 1st Phone Number - with area code","category":"ADD-ON PRODUCT","product":"1st Phone Number - with area code","listedRate":"$15.00 / Month","retail":"","description":"Dynamic Phone Number for Pay Per Click Conversion Tracking.","requirements":"","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"ADD-ON PRODUCT — Additional Phone Numbers - with area code","category":"ADD-ON PRODUCT","product":"Additional Phone Numbers - with area code","listedRate":"$10.00 / Month","retail":"","description":"Dynamic Phone Number for Pay Per Click Conversion Tracking.","requirements":"","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"ADD-ON PRODUCT — 1st Toll Free Number","category":"ADD-ON PRODUCT","product":"1st Toll Free Number","listedRate":"$20.00 / Month","retail":"","description":"Dynamic Toll Free Number for Pay Per Click Conversion Tracking.","requirements":"","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"ADD-ON PRODUCT — Additional Toll Free Numbers","category":"ADD-ON PRODUCT","product":"Additional Toll Free Numbers","listedRate":"$10.00 / Month","retail":"","description":"Dynamic Toll Free Number for Pay Per Click Conversion Tracking.","requirements":"","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — WordPress Website","category":"WEB DEVELOPMENT","product":"WordPress Website","listedRate":"Custom Quote Required","retail":"","description":"Mobile Responsive website built on WordPress platform.","requirements":"","timeline":"Will Come in Quote","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — E-Commerce Website","category":"WEB DEVELOPMENT","product":"E-Commerce Website","listedRate":"Custom Quote Required","retail":"","description":"Mobile Responsive E-Commerce website built on Shopify platform.","requirements":"","timeline":"Will Come in Quote","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Landing Page","category":"WEB DEVELOPMENT","product":"Landing Page","listedRate":"$100 One Time Fee or $19 per month","retail":"","description":"Single web page to land an advertising campaign with call to action and lead form.","requirements":"Includes 1 round of revisions","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Smart 1 Snap","category":"WEB DEVELOPMENT","product":"Smart 1 Snap","listedRate":"$499 / One time set up fee","retail":"","description":"5 page Snap","requirements":"","timeline":"5 Business Days","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Snap Management Fee & Texting for Snap","category":"WEB DEVELOPMENT","product":"Snap Management Fee & Texting for Snap","listedRate":"$75 / Month","retail":"","description":"Includes 500 Texts, hosting, and 1 hour of changes monthly","requirements":"","timeline":"","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Monthly Website Hosting & Maintenance (standard Wordpress site)","category":"WEB DEVELOPMENT","product":"Monthly Website Hosting & Maintenance (standard Wordpress site)","listedRate":"$75.00 / Month","retail":"","description":"","requirements":"12 Month Minimum","timeline":"","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Smart 1 Site / 2-5 pages","category":"WEB DEVELOPMENT","product":"Smart 1 Site / 2-5 pages","listedRate":"$349.50 / One time / $24.50 per month hosting","retail":"","description":"Hosting for Smart 1 built websites. Includes 1 hour of website changes.","requirements":"12 Month Minimum","timeline":"","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Smart 1 Site / 6-25 pages","category":"WEB DEVELOPMENT","product":"Smart 1 Site / 6-25 pages","listedRate":"Starting $599.50 / One time / $39.50 per month hosting","retail":"","description":"Hosting for Smart 1 built websites. Includes 1 hour of website changes.","requirements":"12 Month Minimum","timeline":"","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Smart 1 Site / 26+ pages","category":"WEB DEVELOPMENT","product":"Smart 1 Site / 26+ pages","listedRate":"Starting at $779.50 / One time / $49.50 per month hosting","retail":"","description":"Hosting for Smart 1 built websites. Includes 1 hour of website changes.","requirements":"12 Month Minimum","timeline":"","rateType":null,"rateValue":null},{"label":"WEB DEVELOPMENT — Smart 1 Site / ecommerce","category":"WEB DEVELOPMENT","product":"Smart 1 Site / ecommerce","listedRate":"Custom Quote Required","retail":"","description":"Mobile Responsive website built on Smart 1 Site platform.","requirements":"12 Month Minimum","timeline":"Will Come in Quote","rateType":null,"rateValue":null},{"label":"CREATIVE / DESIGN SERVICES — Standard Set of 6 Ad Creation","category":"CREATIVE / DESIGN SERVICES","product":"Standard Set of 6 Ad Creation","listedRate":"250.0","retail":"","description":"","requirements":"Includes 1 round of revisions","timeline":"2 Business Days","rateType":null,"rateValue":250.0},{"label":"CREATIVE / DESIGN SERVICES — Social Media Ad Creation per platform","category":"CREATIVE / DESIGN SERVICES","product":"Social Media Ad Creation per platform","listedRate":"35.0","retail":"","description":"","requirements":"Includes 1 round of revisions","timeline":"2 Business Days","rateType":null,"rateValue":35.0},{"label":"CREATIVE / DESIGN SERVICES — Email Template Creation","category":"CREATIVE / DESIGN SERVICES","product":"Email Template Creation","listedRate":"100.0","retail":"","description":"","requirements":"Includes 1 round of revisions","timeline":"3 Business Days","rateType":null,"rateValue":100.0},{"label":"CREATIVE / DESIGN SERVICES — Expandable / Rich Media Ad Creation","category":"CREATIVE / DESIGN SERVICES","product":"Expandable / Rich Media Ad Creation","listedRate":"$20.00 / Hour","retail":"","description":"","requirements":"Includes 1 round of revisions.","timeline":"2 Business Days","rateType":null,"rateValue":null},{"label":"CREATIVE / DESIGN SERVICES — Custom Creative / Design Project","category":"CREATIVE / DESIGN SERVICES","product":"Custom Creative / Design Project","listedRate":"Custom Quote Required","retail":"","description":"","requirements":"","timeline":"Will Come in Quote","rateType":null,"rateValue":null},{"label":"SMART 1 SIGNAGE — Digital Outdoor & Indoor Signage","category":"SMART 1 SIGNAGE","product":"Digital Outdoor & Indoor Signage","listedRate":"Custom Quote Required","retail":"","description":"Digital Billboards, Gas Stations, Malls, Universities, Workout Facilities","requirements":"Includes 1 round of revisions","timeline":"5 Business Days","rateType":null,"rateValue":null}];
 const products=rateCard.map(x=>x.label);
+const productCategories=[...new Set(rateCard.map(x=>x.category).filter(Boolean))];
+function productsForCategory(category){return rateCard.filter(x=>x.category===category).map(x=>x.label)}
 const productConfig={};
 rateCard.forEach(x=>{
  productConfig[x.label]={
@@ -342,9 +400,9 @@ const industryIdeas={
 const incomeOptions=["No income targeting","Under $50,000","$50,000–$74,999","$75,000–$99,999","$100,000–$149,999","$150,000–$199,999","$200,000+"];
 const daypartOptions=["No dayparting — run all day","Weekdays only","Business hours","Evenings","Weekends","Custom schedule"];
 const state={
- date:new Date().toLocaleDateString("en-US"),ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",geo:"",industry:"",descriptionMode:"",description:"",
+ date:new Date().toLocaleDateString("en-US"),orderNumber:"",ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",landingPageReviews:[],geoType:"",geoOrigin:"",geoRadius:"",geoDMA:"",geoOther:"",geoZipcodes:"",geo:"",industry:"",descriptionMode:"",description:"",
  sameDates:null,start:"",end:"",dayparting:"",objectives:[],kpis:[],creativeSource:"",gender:"",ages:[],income:[],audiences:[],audienceNotes:"",
- selected:[],items:[],creativeAssets:[],exclusions:"",strategy:{},recommendations:[]
+ selectedCategories:[],currentCategory:"",selected:[],items:[],creativeAssets:[],creativeChecklist:{},internalWarnings:[],generatedDocuments:{},aiDescription:"",exclusions:"",strategy:{},recommendations:[]
 };
 
 let flow=[],index=0,currentProduct=0,tempItem=null,finished=false;
@@ -353,6 +411,7 @@ const messages=document.getElementById("messages"),answer=document.getElementByI
 function baseFlow(){
  return[
   {key:"ioType",q:"Is this a New IO or a Revised IO?",options:["New IO","Revised IO"]},
+  {key:"existingOrderNumber",q:"What is the existing order number?",condition:()=>state.ioType==="Revised IO"},
   {key:"salesContact",q:"Who is the Sales / Contact person?"},
   {key:"salesEmail",q:"What is their email address?"},
   {key:"partner",q:"What is the media partner name?",default:"Smart 1 Marketing"},
@@ -364,19 +423,26 @@ function baseFlow(){
   {key:"url",q:"What is the client's website URL?"},
   {key:"landingMode",q:"Will the campaign use one landing page or multiple landing pages?",options:["One landing page","Multiple landing pages by product"]},
   {key:"landingUrl",q:"What landing-page URL should be used for all products?",condition:()=>state.landingMode==="One landing page"},
-  {key:"geo",q:"What geographic target area should the campaign cover?"},
+  {key:"geoType",q:"How should the geographic targeting area be defined?",options:["City/ZIP Code + Radius","DMA","Other"]},
+  {key:"geoOrigin",q:"What city or ZIP Code should the radius start from?",condition:()=>state.geoType==="City/ZIP Code + Radius"},
+  {key:"geoRadius",q:"What radius in miles should be used?",condition:()=>state.geoType==="City/ZIP Code + Radius"},
+  {key:"geoZipcodes",q:"",condition:()=>state.geoType==="City/ZIP Code + Radius"},
+  {key:"geoDMA",q:"What DMA should be targeted?",condition:()=>state.geoType==="DMA"},
+  {key:"geoOther",q:"Please detail the geographic area that should be targeted.",condition:()=>state.geoType==="Other"},
   {key:"industry",q:"What industry category best describes the client?"},
   {key:"descriptionMode",q:"Would you like SMART1 to build the business description, or do you already have one?",options:["Build one for me","I have one"]},
   {key:"description",q:"Enter the business description.",condition:()=>state.descriptionMode==="I have one"},
   {key:"generatedDescription",q:"",condition:()=>state.descriptionMode==="Build one for me"},
-  {key:"objectives",q:"Which campaign goals apply? Choose one at a time and type DONE when finished.",multi:true,options:Object.keys(objectiveKPIs)},
-  {key:"kpis",q:"Which KPIs should define success? Type Y to add the SMART1 recommendations, choose other options, and type DONE when finished.",multi:true,dynamicOptions:allRecommendedKPIs},
+  {key:"objectives",q:"Which campaign goals apply? Select all that apply, then choose Continue.",multi:true,options:Object.keys(objectiveKPIs)},
+  {key:"kpis",q:"Which KPIs should define success? Select all that apply, or add the SMART1 recommendations, then choose Continue.",multi:true,dynamicOptions:allRecommendedKPIs},
   {key:"gender",q:"What gender should the campaign target?",options:["Male","Female","Both"]},
-  {key:"ages",q:"Which age ranges should be targeted? Choose one at a time and type DONE when finished.",multi:true,options:["18-24","25-34","35-44","45-54","55-64","65+"]},
-  {key:"income",q:"Which household income levels should be targeted? Choose as many as needed and type DONE when finished.",multi:true,options:incomeOptions},
-  {key:"audiences",q:"Which audiences should be targeted? Type Y to add SMART1 suggestions, choose as many as you want, then type DONE.",multi:true,dynamicOptions:suggestedAudienceOptions},
+  {key:"ages",q:"Which age ranges should be targeted? Select all that apply, then choose Continue.",multi:true,options:["18-24","25-34","35-44","45-54","55-64","65+"]},
+  {key:"income",q:"Which household income levels should be targeted? Select all that apply, then choose Continue.",multi:true,options:incomeOptions},
+  {key:"audiences",q:"Which audiences should be targeted? Select all that apply, or add the SMART1 suggestions, then choose Continue.",multi:true,dynamicOptions:suggestedAudienceOptions},
   {key:"audienceNotes",q:"Add any custom audience notes or type NONE."},
-  {key:"selected",q:"Which rate-card products are included? Choose one at a time and type DONE when finished.",multi:true,options:products},
+  {key:"productCategory",q:"Choose a product category.",options:productCategories},
+  {key:"selected",q:"Choose all products needed from this category, then choose Continue.",multi:true,dynamicOptions:()=>productsForCategory(state.currentCategory)},
+  {key:"moreCategory",q:"Would you like to add products from another category?",options:["Yes","No"]},
   {key:"creativeSource",q:"Is Smart 1 building the creative, or is the creative being supplied?",options:["Smart 1 is building the creative","Creative is being supplied"]},
   {key:"exclusions",q:"Are there any exclusions, negative keywords, restricted audiences, placements, geographic areas, competitors, or other items we should be aware of? Type NONE if there are none."}
  ];
@@ -404,10 +470,55 @@ function recommendationFor(q){
 }
 
 function buildBusinessDescription(){
- const client=state.client||"The client";
- const industry=state.industry||"its industry";
- const geo=state.geo||"its target market";
- return `${client} is a ${industry} business serving customers in ${geo}. The company focuses on connecting qualified customers with its products or services through a convenient, trustworthy experience. Its ideal customers are people actively researching or ready to purchase solutions in this category.`;
+ if(state.aiDescription)return state.aiDescription;
+ if(state.brandfetch&&state.brandfetch.description)return state.brandfetch.description;
+ const client=state.client||"The client",industry=state.industry||"its industry",geo=state.geo||"its target market";
+ return `${client} is a ${industry} business serving customers in ${geo}. The company provides products or services designed to meet the needs of customers researching solutions in this category.`;
+}
+
+async function fetchZipcodesForRadius(){
+ addMsg(`Looking up ZIP Codes touched by the ${state.geoRadius}-mile radius around ${state.geoOrigin}…`);
+ try{
+  const res=await fetch("/api/zipcodes-in-radius",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({origin:state.geoOrigin,radius:state.geoRadius})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data.error||"ZIP lookup failed");
+  state.geoZipcodes=data.zipcodes||"";
+  state.geo=`${state.geoOrigin} + ${state.geoRadius}-mile radius | ZIP Codes: ${state.geoZipcodes}`;
+  if(data.warning&&!state.internalWarnings.includes(data.warning))state.internalWarnings.push(data.warning);
+  addMsg(`${data.count||0} ZIP Codes found:\n${state.geoZipcodes}`);
+ }catch(err){
+  addMsg(`ZIP lookup warning: ${err.message}. Enter or edit the ZIP Code list manually.`);
+ }
+}
+async function reviewLandingPage(url,product){
+ if(!url)return;
+ addMsg(`Reviewing the landing page for ${product||"the campaign"}…`);
+ try{
+  const res=await fetch("/api/review-landing-page",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url,client:state.client,product,objectives:state.objectives})});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data.error||"Landing-page review failed");
+  const item={url,product:product||"Shared campaign landing page",review:data.review||""};
+  state.landingPageReviews=state.landingPageReviews.filter(x=>!(x.url===url&&x.product===item.product));
+  state.landingPageReviews.push(item);
+  render();
+ }catch(err){
+  const warning=`Landing-page review warning for ${url}: ${err.message}`;
+  if(!state.internalWarnings.includes(warning))state.internalWarnings.push(warning);
+  addMsg(warning);
+ }
+}
+
+async function generateAIBusinessDescription(){
+ const urls=[state.url].filter(Boolean);
+ try{
+  const res=await fetch('/api/generate-business-description',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({urls,client:state.client,industry:state.industry,geo:state.geo,brandfetch:state.brandfetch})});
+  const data=await res.json();
+  if(!res.ok)throw new Error(data.error||'Description generation failed');
+  state.aiDescription=data.description||'';
+ }catch(err){
+  state.aiDescription=buildBusinessDescription();
+  addMsg(`AI description warning: ${err.message}. A fallback description was prepared.`);
+ }
 }
 function suggestedAudienceOptions(){
  const base=industrySet();
@@ -418,6 +529,16 @@ function suggestedAudienceOptions(){
  ];
  return [...new Set([...(base.behavioral||[]),...(base.contextual||[]),...extras])];
 }
+
+async function allocateOrderNumber(){
+ if(state.orderNumber)return state.orderNumber;
+ const response=await fetch("/api/next-order-number",{method:"POST"});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!result.ok||!result.order_number)throw new Error(result.error||"Unable to create an order number.");
+ state.orderNumber=String(result.order_number);
+ return state.orderNumber;
+}
+
 function addMsg(text,who="bot"){
  const d=document.createElement("div");d.className="msg "+who;d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight
 }
@@ -427,10 +548,84 @@ function showOptions(opts){
  opts.forEach(o=>{const b=document.createElement("button");b.textContent=o;b.onclick=()=>submit(o);w.appendChild(b)});
  messages.appendChild(w);messages.scrollTop=messages.scrollHeight
 }
+
+function multiArrayFor(key){
+ if(key==="objectives")return state.objectives;
+ if(key==="kpis")return state.kpis;
+ if(key==="ages")return state.ages;
+ if(key==="income")return state.income;
+ if(key==="audiences")return state.audiences;
+ if(key==="selected")return state.selected;
+ return [];
+}
+function optionLabel(key,value){
+ if(key==="selected")return ((productConfig[value]||{}).product||value);
+ return value;
+}
+function toggleMultiValue(key,value,checked){
+ const arr=multiArrayFor(key);
+ if(key==="income"){
+  if(value==="No income targeting"&&checked){state.income=[value];return}
+  if(checked)state.income=state.income.filter(x=>x!=="No income targeting");
+ }
+ const target=multiArrayFor(key);
+ const i=target.indexOf(value);
+ if(checked&&i<0)target.push(value);
+ if(!checked&&i>=0)target.splice(i,1);
+}
+function selectedCountFor(q){
+ if(q.key==="selected")return state.selected.filter(x=>((productConfig[x]||{}).category===state.currentCategory)).length;
+ return multiArrayFor(q.key).length;
+}
+function showMultiOptions(q,opts){
+ document.querySelectorAll(".quick,.multi-panel").forEach(x=>x.remove());
+ const panel=document.createElement("div");panel.className="multi-panel";
+ const summary=document.createElement("div");summary.className="multi-summary";
+ const grid=document.createElement("div");grid.className="multi-grid";
+ function refresh(){
+  summary.textContent=`${selectedCountFor(q)} selected`;
+  [...grid.querySelectorAll('.multi-option')].forEach(label=>{
+   const cb=label.querySelector('input');label.classList.toggle('selected',cb.checked);
+  });
+ }
+ opts.forEach(value=>{
+  const label=document.createElement("label");label.className="multi-option";
+  const cb=document.createElement("input");cb.type="checkbox";cb.value=value;
+  cb.checked=multiArrayFor(q.key).includes(value);
+  const span=document.createElement("span");span.className="multi-label";span.textContent=optionLabel(q.key,value);
+  cb.onchange=()=>{toggleMultiValue(q.key,value,cb.checked);render();refresh()};
+  label.append(cb,span);grid.appendChild(label);
+ });
+ const actions=document.createElement("div");actions.className="multi-actions";
+ if(q.key==="kpis"||q.key==="audiences"){
+  const recommend=document.createElement("button");recommend.className="multi-recommend";
+  recommend.textContent=q.key==="kpis"?"Add SMART1 recommendations":"Add SMART1 suggestions";
+  recommend.onclick=()=>{
+   const values=q.key==="kpis"?recommendedKPIs():suggestedAudienceOptions().slice(0,8);
+   values.forEach(v=>toggleMultiValue(q.key,v,true));
+   [...grid.querySelectorAll('input')].forEach(cb=>cb.checked=multiArrayFor(q.key).includes(cb.value));
+   render();refresh();
+  };actions.appendChild(recommend);
+ }
+ const cont=document.createElement("button");cont.className="multi-continue";cont.textContent="Continue";
+ cont.onclick=()=>completeMultiQuestion(q);
+ actions.appendChild(cont);panel.append(summary,grid,actions);messages.appendChild(panel);refresh();
+ messages.scrollTop=messages.scrollHeight;
+}
+function completeMultiQuestion(q){
+ if(selectedCountFor(q)<1){addMsg("Please select at least one option before continuing.");return}
+ document.querySelectorAll(".multi-panel").forEach(x=>x.remove());
+ index++;render();ask();
+}
 function question(){
  index=nextValidIndex(index);
  if(index<flow.length){
   const q=flow[index];
+  
+  if(q.key==="geoZipcodes"){
+   return{key:"geoZipcodes",q:`SMART1 will identify every ZIP Code that appears to touch a ${state.geoRadius}-mile radius around ${state.geoOrigin}. This AI-assisted list can be reviewed and edited before continuing.`};
+  }
+
   if(q.key==="generatedDescription"){
    const suggestion=buildBusinessDescription();
    return{key:"generatedDescription",q:`SMART1 suggests:
@@ -442,12 +637,20 @@ Type Y to use this description, or enter your own.`,suggestion};
  }
  if(currentProduct<state.selected.length){
   const product=state.selected[currentProduct],cfg=productConfig[product];
-  if(!tempItem)tempItem={product,budget:null,rate:null,start:state.sameDates?state.start:"",end:state.sameDates?state.end:"",landingUrl:state.landingMode==="One landing page"?state.landingUrl:"",listedRate:cfg.listedRate,description:cfg.description,requirements:cfg.requirements,timeline:cfg.timeline};
+  if(!tempItem)tempItem={product,budget:null,rate:null,budgetChangesAsked:null,budgetChanges:[],pendingBudgetChange:null,start:state.sameDates?state.start:"",end:state.sameDates?state.end:"",landingUrl:state.landingMode==="One landing page"?state.landingUrl:"",listedRate:cfg.listedRate,description:cfg.description,requirements:cfg.requirements,timeline:cfg.timeline};
   if(!state.sameDates&&!tempItem.start)return{key:"productStart",q:`What is the campaign start date for ${cfg.product}? Use MM/DD/YYYY.`};
   if(!state.sameDates&&!tempItem.end)return{key:"productEnd",q:`What is the campaign end date for ${cfg.product}? Use MM/DD/YYYY.`};
   if(state.landingMode==="Multiple landing pages by product"&&!tempItem.landingUrl)return{key:"productLandingUrl",q:`What landing-page URL should be used for ${cfg.product}?`};
   if(tempItem.budget===null)return{key:"productBudget",q:`The listed rate for ${cfg.product} is ${cfg.listedRate}. What monthly budget or fee should appear on the IO?`,suggestion:extractSuggestedBudget(cfg.listedRate)};
   if((cfg.rate==="CPM"||cfg.rate==="CPV")&&tempItem.rate===null)return{key:"productRate",q:`The rate card recommends ${cfg.listedRate}. Type Y to use the recommended ${cfg.rate} of ${cfg.defaultRate}, or enter your own ${cfg.rate}.`,suggestion:String(cfg.defaultRate)};
+  if(tempItem.budgetChangesAsked===null)return{key:"productBudgetChanges",q:`Will the monthly budget for ${cfg.product} change during the campaign?`,options:["Yes","No"]};
+  if(tempItem.budgetChangesAsked===true){
+   if(!tempItem.pendingBudgetChange)tempItem.pendingBudgetChange={start:"",end:"",budget:null};
+   if(!tempItem.pendingBudgetChange.start)return{key:"budgetChangeStart",q:`What date does the changed budget begin for ${cfg.product}?`};
+   if(!tempItem.pendingBudgetChange.end)return{key:"budgetChangeEnd",q:`What date does this changed budget end for ${cfg.product}?`};
+   if(tempItem.pendingBudgetChange.budget===null)return{key:"budgetChangeAmount",q:`What monthly budget applies from ${tempItem.pendingBudgetChange.start} through ${tempItem.pendingBudgetChange.end}?`};
+   return{key:"moreBudgetChanges",q:`Add another budget change for ${cfg.product}?`,options:["Yes","No"]};
+  }
   return{key:"completeProduct",q:""};
  }
  return null;
@@ -458,6 +661,7 @@ function ask(){
  if(q.key==="completeProduct"){completeProduct();return}
  updateProgress();
  let text=q.q;
+ if(q.key==="geoZipcodes"&&state.geoZipcodes)q={...q,suggestion:state.geoZipcodes,q:`ZIP Codes found:\n${state.geoZipcodes}\n\nType Y to use this list, or edit the comma-separated ZIP Codes.`};
  const suggested=recommendationFor(q);
  if(suggested && !/Type Y/i.test(text))text+=`\nType Y to use this recommendation (${suggested}), or enter your own.`;
  if(q.key==="kpis"){
@@ -465,11 +669,35 @@ function ask(){
   if(rec.length)text=`SMART1 recommends: ${rec.join(", ")}.\n${text}`;
  }
  addMsg(text);
- const opts=q.dynamicOptions?q.dynamicOptions():q.options;if(opts)showOptions(opts.filter(Boolean));
- answer.placeholder=q.multi?"Choose an option or type DONE…":"Type your answer…";answer.focus()
+ const opts=q.dynamicOptions?q.dynamicOptions():q.options;
+ const inputRow=document.getElementById("inputRow");
+ if(q.multi){
+  inputRow.style.display="none";
+  showMultiOptions(q,(opts||[]).filter(Boolean));
+  return;
+ }
+ inputRow.style.display="flex";
+ if(opts)showOptions(opts.filter(Boolean));
+ const isDate=["start","end","productStart","productEnd","budgetChangeStart","budgetChangeEnd"].includes(q.key);
+ const answerControl=document.querySelector(".answer-control");
+ const calendarButton=document.getElementById("calendarButton");
+ answer.type=isDate?"date":"text";
+ answer.placeholder=isDate?"Choose a date":"Type your answer…";
+ answerControl?.classList.toggle("date-active",isDate);
+ calendarButton?.classList.toggle("show",isDate);
+ if(isDate){
+   const today=new Date();
+   const localToday=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+   if(!answer.value)answer.value=localToday;
+   answer.setAttribute("aria-label","Choose campaign date");
+ }else{
+   answer.removeAttribute("aria-label");
+ }
+ answer.focus();
+ messages.scrollTop=messages.scrollHeight;
 }
 async function submit(raw){
- let val=(raw||answer.value).trim();if(!val)return;answer.value="";
+ let val=(raw||answer.value).trim();if(!val)return;answer.value="";if(val.toUpperCase()==="X")val="DONE";
  const q=question();
  const recommended=recommendationFor(q);
 
@@ -481,9 +709,32 @@ async function submit(raw){
  if(val.toUpperCase()==="Y" && recommended!==null)val=recommended;
  addMsg(val,"user");
 
+ 
+ if(q.key==="ioType"){
+  state.ioType=val;
+  if(val==="New IO"){
+   addMsg("Creating the next order number…");
+   try{await allocateOrderNumber();addMsg(`Order ${state.orderNumber} created.`)}
+   catch(err){addMsg(`Order number warning: ${err.message}`)}
+  }
+  index++;render();ask();return
+ }
+ if(q.key==="existingOrderNumber"){
+  state.orderNumber=val;index++;render();ask();return
+ }
+
  if(q.key==="sameDates"){
   state.sameDates=/^y(es)?$/i.test(val);if(!state.sameDates){state.start="";state.end=""}
   index++;render();ask();return
+ }
+ if(q.key==="descriptionMode"){
+  state.descriptionMode=val;
+  index++;
+  if(val==="Build one for me"){
+   addMsg("I’m reviewing the website and preparing a business description…");
+   await generateAIBusinessDescription();
+  }
+  render();ask();return
  }
  if(q.key==="generatedDescription"){
   state.description=val;index++;render();ask();return
@@ -501,7 +752,7 @@ async function submit(raw){
  }
  if(q.key==="productStart"){tempItem.start=val;ask();return}
  if(q.key==="productEnd"){tempItem.end=val;ask();return}
- if(q.key==="productLandingUrl"){tempItem.landingUrl=val;ask();return}
+ if(q.key==="productLandingUrl"){tempItem.landingUrl=val;await reviewLandingPage(val,(productConfig[tempItem.product]||{}).product||tempItem.product);ask();return}
 
  
  if(q.key==="objectives"){
@@ -537,16 +788,57 @@ async function submit(raw){
   if(!state.ages.includes(val))state.ages.push(val);render();addMsg(`${val} added. Choose another age range or type DONE.`);
   showOptions(["18-24","25-34","35-44","45-54","55-64","65+"].filter(x=>!state.ages.includes(x)));return
  }
- if(q.key==="selected"){
-  if(val.toUpperCase()==="DONE"){if(!state.selected.length){addMsg("Select at least one product.");ask();return}index++;render();ask();return}
-  if(!state.selected.includes(val))state.selected.push(val);render();addMsg(`${val} added. Choose another product or type DONE.`);
-  showOptions(products.filter(x=>!state.selected.includes(x)));return
+ if(q.key==="productCategory"){
+  state.currentCategory=val;
+  if(!state.selectedCategories.includes(val))state.selectedCategories.push(val);
+  index++;render();ask();return
  }
+ if(q.key==="selected"){
+  if(val.toUpperCase()==="DONE"){
+   const inCategory=state.selected.filter(x=>(productConfig[x]||{}).category===state.currentCategory);
+   if(!inCategory.length){addMsg("Select at least one product from this category.");ask();return}
+   index++;render();ask();return
+  }
+  if(!state.selected.includes(val))state.selected.push(val);render();addMsg(`${(productConfig[val]||{}).product||val} added. Choose another product or type DONE.`);
+  showOptions(productsForCategory(state.currentCategory).filter(x=>!state.selected.includes(x)));return
+ }
+ if(q.key==="moreCategory"){
+  if(/^y(es)?$/i.test(val)){
+   state.currentCategory="";
+   index-=2;
+  }else index++;
+  render();ask();return
+ }
+ 
+ if(q.key==="productBudgetChanges"){
+  tempItem.budgetChangesAsked=/^y(es)?$/i.test(val);
+  if(!tempItem.budgetChangesAsked)tempItem.pendingBudgetChange=null;
+  ask();return
+ }
+ if(q.key==="budgetChangeStart"){tempItem.pendingBudgetChange.start=val;ask();return}
+ if(q.key==="budgetChangeEnd"){tempItem.pendingBudgetChange.end=val;ask();return}
+ if(q.key==="budgetChangeAmount"){tempItem.pendingBudgetChange.budget=num(val);ask();return}
+ if(q.key==="moreBudgetChanges"){
+  tempItem.budgetChanges.push({...tempItem.pendingBudgetChange});
+  if(/^y(es)?$/i.test(val)){tempItem.pendingBudgetChange={start:"",end:"",budget:null};ask();return}
+  tempItem.pendingBudgetChange=null;tempItem.budgetChangesAsked=false;ask();return
+ }
+
  if(q.key==="productBudget"){tempItem.budget=num(val);ask();return}
  if(q.key==="productRate"){tempItem.rate=num(val);ask();return}
 
  state[q.key]=val.toUpperCase()==="NONE"?"":val;
  if(q.key==="url"){await fetchBrandfetchData(state.url)}
+ if(q.key==="landingUrl"){await reviewLandingPage(state.landingUrl,"Shared campaign landing page")}
+ if(q.key==="geoOrigin"||q.key==="geoRadius"){
+   if(q.key==="geoRadius")await fetchZipcodesForRadius();
+ }
+ if(q.key==="geoZipcodes"){
+   state.geoZipcodes=val||state.geoZipcodes;
+   state.geo=`${state.geoOrigin} + ${state.geoRadius}-mile radius | ZIP Codes: ${state.geoZipcodes}`;
+ }
+ if(q.key==="geoDMA")state.geo=`DMA: ${state.geoDMA}`;
+ if(q.key==="geoOther")state.geo=state.geoOther;
  index++;render();ask()
 }
 function lengthFor(start,end){
@@ -567,15 +859,42 @@ function campaignLength(){
  if(!starts.length||!ends.length)return{days:0,weeks:0,months:1};
  return lengthFor(new Date(Math.min(...starts)).toLocaleDateString(),new Date(Math.max(...ends)).toLocaleDateString())
 }
+function activeMonthlyBudget(item,date){
+ const t=new Date(date).getTime();
+ const change=(item.budgetChanges||[]).find(c=>{
+  const a=new Date(c.start).getTime(),b=new Date(c.end).getTime();
+  return !isNaN(a)&&!isNaN(b)&&t>=a&&t<=b;
+ });
+ return change?Number(change.budget||0):Number(item.budget||0);
+}
+function budgetScheduleText(item){
+ const lines=[`Base monthly budget: ${money(item.budget||0)}`];
+ (item.budgetChanges||[]).forEach(c=>lines.push(`${c.start} to ${c.end}: ${money(c.budget||0)} per month`));
+ return lines.join(" | ");
+}
 function recalculateItem(item){
- const cfg=productConfig[item.product],len=lengthFor(item.start,item.end),months=len.months||1;
- item.campaignBudget=(item.budget||0)*months;
+ const cfg=productConfig[item.product],len=lengthFor(item.start,item.end);
+ item.monthlyBudget=item.budget||0;
+ item.campaignBudget=0;
+ const a=new Date(item.start),b=new Date(item.end);
+ if(!isNaN(a)&&!isNaN(b)&&b>=a){
+  for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)){
+   item.campaignBudget+=activeMonthlyBudget(item,d)/30.4375;
+  }
+ }else item.campaignBudget=item.budget||0;
  item.monthlyDelivery=null;item.campaignDelivery=null;
- if(cfg.rate==="CPM"&&item.rate>0){item.monthlyDelivery=((item.budget||0)/item.rate)*1000;item.campaignDelivery=item.monthlyDelivery*months}
- else if(cfg.rate==="CPV"&&item.rate>0){item.monthlyDelivery=(item.budget||0)/item.rate;item.campaignDelivery=item.monthlyDelivery*months}
+ if(cfg.rate==="CPM"&&item.rate>0){
+  item.monthlyDelivery=((item.budget||0)/item.rate)*1000;
+  item.campaignDelivery=(item.campaignBudget/item.rate)*1000;
+ }else if(cfg.rate==="CPV"&&item.rate>0){
+  item.monthlyDelivery=(item.budget||0)/item.rate;
+  item.campaignDelivery=item.campaignBudget/item.rate;
+ }
  return item
 }
 function completeProduct(){
+ if(tempItem.pendingBudgetChange&&tempItem.pendingBudgetChange.budget!==null)tempItem.budgetChanges.push({...tempItem.pendingBudgetChange});
+ tempItem.pendingBudgetChange=null;
  recalculateItem(tempItem);
  state.items.push(tempItem);tempItem=null;currentProduct++;render();ask()
 }
@@ -642,23 +961,23 @@ function finish(){
  finished=true;buildStrategy();render();document.getElementById("bar").style.width="100%";document.getElementById("pct").textContent="100%";
  document.getElementById("stepLabel").textContent="Campaign report complete";document.getElementById("status").textContent="Ready for Review";
  addMsg("The campaign report is complete. Use Edit Answers at the top of the report to revise goals, KPIs, dates, budgets, rates, or client information.");
- answer.disabled=true;document.getElementById("send").disabled=true
+ answer.disabled=true;document.getElementById("send").disabled=true;document.getElementById("inputRow").style.display="none"
 }
 function updateProgress(){
  const perProduct=state.sameDates?2:4,total=flow.length+Math.max(state.selected.length*perProduct,1);
  const completed=index+currentProduct*perProduct,pct=Math.min(96,Math.round(completed/total*100));
  document.getElementById("bar").style.width=pct+"%";document.getElementById("pct").textContent=pct+"%";
  const k=(question()||{}).key;
- document.getElementById("stepLabel").textContent=index<5?"Campaign setup":index<12?"Client information":index<14?"Goals and KPIs":index<19?"Target audience":k==="selected"?"Media selection":"Product details"
+ document.getElementById("stepLabel").textContent=index<5?"Campaign setup":index<12?"Client information":index<14?"Goals and KPIs":index<19?"Target audience":(k==="selected"||k==="productCategory"||k==="moreCategory")?"Media selection":"Product details"
 }
 function render(){
  state.items.forEach(recalculateItem);
  text("f-landing-pages",state.landingMode==="One landing page"?(state.landingUrl||"—"):state.items.map(i=>`${(productConfig[i.product]||{}).product||i.product}: ${i.landingUrl||"—"}`).join("\n"));
- text("f-date",state.date);text("f-io-type",state.ioType);text("f-partner",state.partner);text("f-sales-contact",state.salesContact);text("f-sales-email",state.salesEmail);text("f-client",state.client);text("f-url",state.url);
- const b=state.brandfetch||{};text("f-brand-name",b.name);text("f-brand-domain",b.domain||normalizeWebsiteDomain(state.url));text("f-brand-description",b.description);text("f-brand-colors",(b.colors||[]).join(", "));text("f-brand-fonts",(b.fonts||[]).join(", "));
- const logoEl=document.getElementById("f-brand-logo");if(logoEl)logoEl.innerHTML=b.logo?`<a href="${esc(b.logo)}" target="_blank">Open logo / brand asset</a><br><small>${esc(b.logo)}</small>`:"—";
- text("f-brand-links",(b.links||[]).map(x=>typeof x==="string"?x:(x.name?x.name+": ":"")+(x.url||"")).join("\n"));
- text("f-geo",state.geo);text("f-industry",state.industry);text("f-description",state.description);
+ text("f-date",state.date);text("f-io-type",state.ioType);text("f-order-number",state.orderNumber);text("f-partner",state.partner);text("f-sales-contact",state.salesContact);text("f-sales-email",state.salesEmail);text("f-client",state.client);text("f-url",state.url);
+ const b=state.brandfetch||{};text("f-brand-name",b.name);text("f-brand-domain",b.domain||normalizeWebsiteDomain(state.url));text("f-brand-description",b.description);const colorEl=document.getElementById("f-brand-colors");if(colorEl)colorEl.innerHTML=(b.colors||[]).length?`<div class="brand-colors">${(b.colors||[]).map(c=>`<span class="brand-color"><span class="brand-swatch" style="background:${esc(c)}"></span>${esc(c)}</span>`).join("")}</div>`:"—";text("f-brand-fonts",(b.fonts||[]).join(", "));
+ const logoEl=document.getElementById("f-brand-logo");if(logoEl)logoEl.innerHTML=b.logo?`<a href="${esc(b.logo)}" target="_blank"><img class="brand-logo-img" src="${esc(b.logo)}" alt="Brand logo">Open full logo</a><br><small>${esc(b.logo)}</small>`:"—";
+ const linksEl=document.getElementById("f-brand-links");if(linksEl)linksEl.innerHTML=(b.links||[]).length?(b.links||[]).map(x=>{const u=typeof x==="string"?x:(x.url||"");const n=typeof x==="string"?x:((x.name?x.name+": ":"")+u);return u?`<a href="${esc(u)}" target="_blank">${esc(n)}</a>`:esc(n)}).join("<br>"):"—";
+ text("f-geo",state.geo);text("f-geo-type",state.geoType);text("f-geo-count",state.geoZipcodes?String(state.geoZipcodes.split(",").filter(Boolean).length):"—");text("f-industry",state.industry);text("f-description",state.description);
  text("f-objective",state.objectives.join(", "));text("f-kpi",state.kpis.join(", "));text("f-creative-source",state.creativeSource);
  text("f-gender",state.gender);text("f-age",state.ages.join(", "));text("f-income",state.income.length?state.income.join(", "):"No income filter");
  text("f-audience-notes",state.audienceNotes);
@@ -679,10 +998,10 @@ function render(){
   const unit=cfg.rate==="CPV"?"views":"impressions";
   const monthly=i.monthlyDelivery?`${whole(i.monthlyDelivery)} ${unit}`:"Performance / service based";
   const details=[cfg.description,cfg.requirements?`Requirements: ${cfg.requirements}`:'',cfg.timeline?`Launch: ${cfg.timeline}`:''].filter(Boolean).join(' | ');
-  return`<tr><td><strong>${esc(cfg.product)}</strong><br><small>${esc(cfg.category)}</small><br><small>${esc(details)}</small><br><small><strong>Landing page:</strong> ${esc(i.landingUrl||state.landingUrl||"—")}</small></td><td>${esc(i.start||"—")}<br>to<br>${esc(i.end||"—")}</td><td class="money">${money(i.budget)}</td><td>${esc(rate)}</td><td class="number">${monthly}</td></tr>`
+  return`<tr><td><strong>${esc(cfg.product)}</strong><br><small>${esc(cfg.category)}</small><br><small>${esc(details)}</small><br><small><strong>Landing page:</strong> ${esc(i.landingUrl||state.landingUrl||"—")}</small></td><td>${esc(i.start||"—")}<br>to<br>${esc(i.end||"—")}</td><td>${esc(budgetScheduleText(i))}</td><td>${esc(rate)}</td><td class="number">${monthly}</td><td class="money">${money(i.campaignBudget)}</td></tr>`
  }).join("");
- const monthly=state.items.reduce((a,b)=>a+(b.budget||0),0),delivery=state.items.reduce((a,b)=>a+(b.monthlyDelivery||0),0);
- text("f-monthly-total",money(monthly));text("f-delivery-total",whole(delivery));
+ const monthly=state.items.reduce((a,b)=>a+(b.budget||0),0),campaignTotal=state.items.reduce((a,b)=>a+(b.campaignBudget||0),0),delivery=state.items.reduce((a,b)=>a+(b.monthlyDelivery||0),0);
+ text("f-monthly-total",money(monthly));text("f-campaign-total",money(campaignTotal));text("f-delivery-total",whole(delivery));
  text("f-primary-kpi",state.kpis.join(", "));
  const secondary=allRecommendedKPIs().filter(k=>!state.kpis.includes(k));
  text("f-secondary-kpis",secondary.join(", "));
@@ -692,7 +1011,28 @@ function render(){
  else bench.innerHTML=state.selected.map(p=>`<tr><td>${esc(productConfig[p].product)}</td><td>${productConfig[p].benchmark[0]}</td><td>${productConfig[p].benchmark[1]}</td></tr>`).join("");
  renderCreativeAssets();
  const rec=document.getElementById("recommendations");
- if(state.recommendations.length)rec.innerHTML=state.recommendations.map(r=>`<li>${esc(r)}</li>`).join("")
+ if(state.recommendations.length)rec.innerHTML=state.recommendations.map(r=>`<li>${esc(r)}</li>`).join("");
+ renderCreativeChecklist();
+ const lpBox=document.getElementById("landingPageReviews");
+ if(lpBox)lpBox.innerHTML=state.landingPageReviews.length?state.landingPageReviews.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><strong>${esc(r.product)}</strong><br><a href="${esc(r.url)}" target="_blank">${esc(r.url)}</a><div class="value" style="margin-top:7px">${esc(r.review)}</div></div>`).join(""):'<div class="empty">Landing-page reviews will appear after URLs are entered.</div>';
+ const warningBox=document.getElementById("internalWarnings");
+ if(warningBox)warningBox.innerHTML=state.internalWarnings.length?state.internalWarnings.map(w=>`<div class="warn" style="padding:6px 0">⚠ ${esc(w)}</div>`).join(""):'<div class="empty">No internal warnings.</div>';
+}
+function creativeChecklistItems(productKey){
+ const r=productRequirements(productKey),items=[...(r.creative||[])];
+ if(state.creativeSource==="Smart 1 is building the creative")items.unshift("Provide approved logo, brand colors, photos, offer details, call to action and required disclaimers.");
+ if(!items.length)items.push("Confirm the creative files, copy, destination URL and approval contact needed for this product.");
+ return [...new Set(items)];
+}
+function checklistKey(product,item){return `${product}::${item}`}
+function toggleCreativeChecklist(key,checked){state.creativeChecklist[key]=checked;renderCreativeChecklist()}
+function renderCreativeChecklist(){
+ const box=document.getElementById("creativeChecklist");if(!box)return;
+ if(!state.selected.length){box.innerHTML='<div class="empty">Select products to build the creative checklist.</div>';return}
+ box.innerHTML=state.selected.map(p=>{
+  const cfg=productConfig[p]||{},items=creativeChecklistItems(p);
+  return `<div class="check-product"><h3>${esc(cfg.product||p)}</h3>${items.map(item=>{const key=checklistKey(p,item),done=!!state.creativeChecklist[key];return `<label class="check-item ${done?'done':''}"><input type="checkbox" ${done?'checked':''} onchange='toggleCreativeChecklist(${JSON.stringify(key)},this.checked)'><span>${esc(item)}</span></label>`}).join('')}</div>`
+ }).join('')
 }
 function openEditor(){
  const objectives=document.getElementById("e-objectives"),kpis=document.getElementById("e-kpis");
@@ -932,7 +1272,8 @@ function requirementsPacketHTML(){
   const list=(heading,items)=>items.length?`<h3>${heading}</h3><ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:"";
   return `<section><h2>${esc(cfg.product||key)}</h2><p><strong>Category:</strong> ${esc(cfg.category||"")} &nbsp; <strong>Rate:</strong> ${esc(cfg.listedRate||"")}</p>${list("Access Needed",r.access)}${list("Creative Needed",r.creative)}${list("Campaign Setup Items",r.setup)}${list("Important Notes",r.notes)}${list("General Items",r.common)}</section>`;
  }).join("");
- return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;color:#1d2a3a;max-width:950px;margin:28px auto;padding:0 25px;line-height:1.42}h1{color:#14284b;border-bottom:4px solid #14284b;padding-bottom:10px}h2{color:#14284b;margin-top:28px}h3{font-size:14px;color:#1f63ae;margin-bottom:5px}section{border-bottom:1px solid #d5dee9;padding-bottom:18px}.meta{background:#eef3f8;padding:12px 15px;border-radius:7px}li{margin-bottom:5px}.alert{background:#fff4dd;border-left:5px solid #e5a323;padding:10px 13px}</style></head><body><h1>${esc(title)}</h1><div class="meta"><strong>IO:</strong> ${esc(state.ioType||"")}<br><strong>Sales / Contact:</strong> ${esc(state.salesContact||"")} - ${esc(state.salesEmail||"")}<br><strong>Creative:</strong> ${esc(state.creativeSource||"Not selected")}<br><strong>Campaign dates:</strong> ${esc(state.sameDates?state.start:"Product-specific")} to ${esc(state.sameDates?state.end:"Product-specific")}</div><p class="alert"><strong>Display file limit:</strong> All display creative must be 150 KB or smaller per file.</p>${sections||"<p>No products have been selected.</p>"}
+ return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;color:#1d2a3a;max-width:950px;margin:28px auto;padding:0 25px;line-height:1.42}h1{color:#14284b;border-bottom:4px solid #14284b;padding-bottom:10px}h2{color:#14284b;margin-top:28px}h3{font-size:14px;color:#1f63ae;margin-bottom:5px}section{border-bottom:1px solid #d5dee9;padding-bottom:18px}.meta{background:#eef3f8;padding:12px 15px;border-radius:7px}li{margin-bottom:5px}.alert{background:#fff4dd;border-left:5px solid #e5a323;padding:10px 13px}</style></head><body><h1>${esc(title)}</h1><div class="meta"><strong>IO:</strong> ${esc(state.ioType||"")}<br><strong>Sales / Contact:</strong> ${esc(state.salesContact||"")} - ${esc(state.salesEmail||"")}<br><strong>Creative:</strong> ${esc(state.creativeSource||"Not selected")}<br><strong>Campaign dates:</strong> ${esc(state.sameDates?state.start:"Product-specific")} to ${esc(state.sameDates?state.end:"Product-specific")}</div><p class="alert"><strong>Display file limit:</strong> All display creative must be 150 KB or smaller per file.</p>${state.landingPageReviews.length?`<section><h2>Landing Page Review — Internal Needs</h2>${state.landingPageReviews.map(r=>`<h3>${esc(r.product)}</h3><p><a href="${esc(r.url)}">${esc(r.url)}</a></p><p>${esc(r.review)}</p>`).join("")}</section>`:""}
+ ${sections||"<p>No products have been selected.</p>"}
 <div class="creative-modal" id="creativeModal">
  <div class="creative-card">
   <div class="creative-head">
@@ -953,7 +1294,7 @@ function requirementsPacketHTML(){
    </div>
    <div class="upload-box">
     <strong>Validation behavior</strong>
-    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p>
+    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p><div id="smart1snapValidationWarning" class="callout" style="display:none;margin-top:8px"><strong>SMART1Snap warning:</strong> <span></span></div>
     <div id="uploadConnection" class="callout">Checking secure Cloudinary connection…</div>
    </div>
    <div class="upload-box wide asset-list"><strong>Creative added to this IO</strong><div id="creativeAssetList"></div></div>
@@ -1027,7 +1368,7 @@ function customerRequirementsHTML(){
    </div>
    <div class="upload-box">
     <strong>Validation behavior</strong>
-    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p>
+    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p><div id="smart1snapValidationWarning" class="callout" style="display:none;margin-top:8px"><strong>SMART1Snap warning:</strong> <span></span></div>
     <div id="uploadConnection" class="callout">Checking secure Cloudinary connection…</div>
    </div>
    <div class="upload-box wide asset-list"><strong>Creative added to this IO</strong><div id="creativeAssetList"></div></div>
@@ -1082,7 +1423,7 @@ function openCreativeManager(){
 }
 function closeCreativeManager(){document.getElementById("creativeModal").classList.remove("open")}
 function toggleUploadFields(){document.getElementById("uploadFields").style.display=document.getElementById("creativeStatus").value==="later"?"none":"block"}
-function clearCreativeForm(){document.getElementById("creativeFiles").value="";document.getElementById("creativeNote").value="";document.getElementById("creativeStatus").value="upload";toggleUploadFields()}
+function clearCreativeForm(){document.getElementById("creativeFiles").value="";const ev=document.getElementById("creativeEvergreen");if(ev)ev.checked=false;document.getElementById("creativeNote").value="";document.getElementById("creativeStatus").value="upload";toggleUploadFields()}
 async function checkUploadConnection(){
  const el=document.getElementById("uploadConnection");
  try{const r=await fetch('/api/cloudinary-config');if(!r.ok)throw new Error();const d=await r.json();el.innerHTML=`<strong>Cloudinary connected:</strong> ${esc(d.cloud_name||CLOUDINARY_CLOUD_NAME)}`;el.style.borderLeftColor="#178653"}
@@ -1114,11 +1455,18 @@ async function getSignature(params){
  if(!r.ok)throw new Error((await r.text())||'Unable to create secure upload signature');return r.json()
 }
 async function uploadOneCreative(file,product,note){
- const meta=await inspectMedia(file),validation=validateCreative(file,meta,product),start=campaignStartForProduct(product)||"no_start_date";
+ const meta=await inspectMedia(file),validation=validateCreative(file,meta,product),start=campaignStartForProduct(product)||"no_start_date";const evergreen=!!document.getElementById("creativeEvergreen")?.checked;
  const tags=[slugTag(state.client),slugTag(start),slugTag((productConfig[product]||{}).product||product),"smart1_io_creative"];
  const folder=`smart1_campaigns/${slugTag(state.client)}/${slugTag(start)}`;
- const pending={id:`asset_${Date.now()}_${Math.random().toString(36).slice(2)}`,product,fileName:file.name,status:"uploading",validation:validation.message,validationStatus:validation.status,url:"",bytes:file.size,width:meta.width,height:meta.height,note,tags};
- state.creativeAssets.push(pending);renderCreativeAssets();render();
+ const pending={id:`asset_${Date.now()}_${Math.random().toString(36).slice(2)}`,product,fileName:file.name,status:"uploading",validation:validation.message,validationStatus:validation.status,url:"",bytes:file.size,width:meta.width,height:meta.height,note,tags,evergreen};
+ state.creativeAssets.push(pending);
+ if(validation.status==="warning"){
+  const warning=`${(productConfig[product]||{}).product||product}: ${file.name} — ${validation.message}`;
+  if(!state.internalWarnings.includes(warning))state.internalWarnings.push(warning);
+  const box=document.getElementById("smart1snapValidationWarning");
+  if(box){box.style.display="block";box.querySelector("span").textContent=warning}
+ }
+ renderCreativeAssets();render();
  const params={timestamp:Math.floor(Date.now()/1000),folder,tags:tags.join(','),context:`client=${slugTag(state.client)}|campaign_start=${slugTag(start)}|product=${slugTag((productConfig[product]||{}).product||product)}`};
  try{
   const signed=await getSignature(params),form=new FormData();form.append('file',file);form.append('api_key',signed.api_key);form.append('timestamp',params.timestamp);form.append('signature',signed.signature);form.append('folder',folder);form.append('tags',params.tags);form.append('context',params.context);
@@ -1130,7 +1478,7 @@ async function uploadOneCreative(file,product,note){
 async function handleCreativeAction(){
  const product=document.getElementById("creativeProduct").value,status=document.getElementById("creativeStatus").value,note=document.getElementById("creativeNote").value.trim();if(!product){alert('Select a product.');return}
  if(status==='later'){
-  state.creativeAssets.push({id:`later_${Date.now()}`,product,fileName:"Creative coming later",status:"coming later",validation:"Creative has not been supplied yet.",validationStatus:"pending",url:"",note,tags:[slugTag(state.client),slugTag(campaignStartForProduct(product))]});renderCreativeAssets();render();clearCreativeForm();return
+  state.creativeAssets.push({id:`later_${Date.now()}`,product,fileName:"Creative coming later",status:"coming later",validation:"Creative has not been supplied yet.",validationStatus:"pending",url:"",note,evergreen:!!document.getElementById("creativeEvergreen")?.checked,tags:[slugTag(state.client),slugTag(campaignStartForProduct(product))]});renderCreativeAssets();render();clearCreativeForm();return
  }
  const files=[...document.getElementById("creativeFiles").files];if(!files.length){alert('Choose one or more files.');return}
  for(const f of files)await uploadOneCreative(f,product,note);clearCreativeForm()
@@ -1138,13 +1486,44 @@ async function handleCreativeAction(){
 function renderCreativeAssets(){
  const list=document.getElementById("creativeAssetList"),rows=document.getElementById("creativeRows");if(!list||!rows)return;
  if(!state.creativeAssets.length){list.innerHTML='<p class="tiny">No creative has been added.</p>';rows.innerHTML='<tr><td colspan="5" class="empty">No creative assets uploaded yet.</td></tr>';return}
- list.innerHTML=state.creativeAssets.map(a=>`<div class="asset-item"><div class="asset-top"><div><strong>${esc(a.fileName)}</strong><div class="tiny">${esc((productConfig[a.product]||{}).product||a.product)}</div></div><span class="${a.status==='uploaded'?'ok':a.status==='error'?'warn':'pending'}">${esc(a.status)}</span></div><div class="tiny ${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation||'')}</div>${a.url?`<div class="url-field"><input readonly value="${esc(a.url)}"><button class="upload-secondary" onclick="navigator.clipboard.writeText('${esc(a.url)}')">Copy URL</button></div>`:''}</div>`).join('');
- rows.innerHTML=state.creativeAssets.map(a=>`<tr><td>${esc((productConfig[a.product]||{}).product||a.product)}</td><td>${esc(a.fileName)}</td><td>${esc(a.status)}</td><td class="${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation)}</td><td>${a.url?`<a href="${esc(a.url)}" target="_blank">Open asset</a><br><small>${esc(a.url)}</small>`:'—'}</td></tr>`).join('')
+ list.innerHTML=state.creativeAssets.map(a=>`<div class="asset-item"><div class="asset-top"><div><strong>${esc(a.fileName)}</strong><div class="tiny">${esc((productConfig[a.product]||{}).product||a.product)}</div></div><span class="${a.status==='uploaded'?'ok':a.status==='error'?'warn':'pending'}">${esc(a.status)}</span></div><div class="tiny"><strong>Evergreen:</strong> ${a.evergreen?"Yes":"No"}</div><div class="tiny ${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation||'')}</div>${a.validationStatus==="warning"?`<div class="callout" style="margin-top:7px"><strong>SMART1Snap validation warning:</strong> ${esc(a.validation)}</div>`:""}${a.url?`<div class="url-field"><input readonly value="${esc(a.url)}"><button class="upload-secondary" onclick="navigator.clipboard.writeText('${esc(a.url)}')">Copy URL</button></div>`:''}</div>`).join('');
+ rows.innerHTML=state.creativeAssets.map(a=>{const isImage=a.resourceType==='image'||/\.(png|jpe?g|gif|webp)$/i.test(a.fileName||'');const preview=a.url&&isImage?`<a href="${esc(a.url)}" target="_blank"><img class="creative-thumb" src="${esc(a.url)}" alt="Creative thumbnail"></a>`:'';return `<tr><td>${esc((productConfig[a.product]||{}).product||a.product)}</td><td>${preview}${esc(a.fileName)}</td><td>${esc(a.status)}</td><td class="${a.validationStatus==='warning'?'warn':a.validationStatus==='ok'?'ok':''}">${esc(a.validation)}</td><td>${a.url?`<a href="${esc(a.url)}" target="_blank">Open asset</a><br><small>${esc(a.url)}</small>`:'—'}</td></tr>`}).join('')
 }
+
+function customerRequirementItems(){
+ const lines=[
+  'Approved logo, brand colors or brand guidelines, and your best photos or videos',
+  'Main offer or message, call to action, landing page and phone number to promote',
+  'Expiration dates, restrictions, legal wording or required disclaimers',
+  'One person who can approve creative and the contacts who should receive reports or leads',
+  'Competitors, negative keywords, locations, websites, audiences or topics to avoid',
+  'Preferred days or hours for the campaign to run'
+ ];
+ state.selected.forEach(k=>customerItemsForProduct(k).forEach(x=>{if(!lines.includes(x))lines.push(x)}));
+ return lines;
+}
+function internalRequirementSections(){
+ return state.selected.map(k=>{const cfg=productConfig[k]||{};const r=productRequirements(k);return{title:cfg.product||k,items:[...(r.common||[]),...(r.creative||[]),...(r.access||[]),...(r.setup||[])]}});
+}
+async function generateStoredPDF(type){
+ if(!state.client){alert('Enter the client name first.');return}
+ buildStrategy();render();
+ const totalCampaignBudget=state.items.reduce((s,i)=>s+(i.campaignBudget||0),0);const monthlySpend=state.items.reduce((s,i)=>s+(i.budget||0),0);const payload={...state,monthlySpendFormatted:money(monthlySpend),totalCampaignBudgetFormatted:money(totalCampaignBudget),documentType:type,brandfetch:state.brandfetch,creativeAssets:state.creativeAssets.map(a=>({...a,productLabel:(productConfig[a.product]||{}).product||a.product})),customerRequirements:customerRequirementItems(),internalRequirements:internalRequirementSections()};
+ try{
+  const r=await fetch('/api/generate-requirements-pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d=await r.json();if(!r.ok)throw new Error(d.detail||d.error||'PDF creation failed');
+  const label=type==='internal'?'Internal requirements':'Customer PDF';
+  state.generatedDocuments[type]={url:d.url,filename:d.filename,publicId:d.public_id,createdAt:new Date().toISOString()};render();
+  addMsg(`${label} created and stored in Cloudinary: ${d.url}`);
+  window.open(d.url,'_blank');
+ }catch(e){alert(`Unable to create PDF: ${e.message}`)}
+}
+
 function downloadJSON(){
  buildStrategy();render();
  const exportData={...state,brandProfile:state.brandfetch,landingPages:state.items.map(i=>({product:(productConfig[i.product]||{}).product||i.product,url:i.landingUrl||state.landingUrl||""})),campaignLength:campaignLength(),totals:{
   monthly:state.items.reduce((a,b)=>a+(b.budget||0),0),
+  totalCampaignBudget:state.items.reduce((a,b)=>a+(b.campaignBudget||0),0),
   estimatedMonthlyDelivery:state.items.reduce((a,b)=>a+(b.monthlyDelivery||0),0)
  }};
  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:"application/json"}),a=document.createElement("a");
@@ -1152,9 +1531,94 @@ function downloadJSON(){
 }
 function restart(){location.reload()}
 flow=baseFlow();
+
+const calendarButton=document.getElementById("calendarButton");
+function openAnswerDatePicker(){
+ if(answer.type!=="date")return;
+ try{
+  if(typeof answer.showPicker==="function")answer.showPicker();
+  else answer.focus();
+ }catch(_err){answer.focus()}
+}
+calendarButton?.addEventListener("click",openAnswerDatePicker);
+document.querySelector(".answer-control")?.addEventListener("click",event=>{
+ if(answer.type==="date" && event.target!==document.getElementById("send"))openAnswerDatePicker();
+});
+
 document.getElementById("send").onclick=()=>submit();
 answer.addEventListener("keydown",e=>{if(e.key==="Enter")submit()});
-render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been filled automatically. I’ll first identify whether this is a new or revised IO and collect the salesperson contact information, then build the campaign plan and product requirements.");ask();
+render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been filled automatically. Date questions use the blue calendar field and calendar button. I’ll first identify whether this is a new or revised IO and collect the salesperson contact information, then build the campaign plan and product requirements.");ask();
+
+
+async function ensurePdfForWebhook(kind){
+  // Reuse an existing Cloudinary document URL when available.
+  state.documents = state.documents || {};
+  const key = kind === "client" ? "client_pdf_url" : "internal_pdf_url";
+  if(state.documents[key]) return state.documents[key];
+
+  const endpoint = kind === "client" ? "/api/generate-client-pdf" : "/api/generate-internal-pdf";
+  const response = await fetch(endpoint,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(state)
+  });
+  const result = await response.json().catch(()=>({}));
+  if(!response.ok || !result.ok){
+    throw new Error(result.error || `Unable to generate the ${kind} PDF.`);
+  }
+  const url = result.secure_url || result.url || result.pdf_url;
+  if(!url) throw new Error(`The ${kind} PDF was generated, but no Cloudinary URL was returned.`);
+  state.documents[key] = url;
+  return url;
+}
+
+async function submitCompletedIO(){
+  const status=document.getElementById("submitStatus");
+  const setStatus=(message,type)=>{
+    status.textContent=message;
+    status.className=`submit-status show ${type||""}`;
+  };
+  try{
+    setStatus("Creating or confirming both PDFs before submission…","");
+    const clientUrl=await ensurePdfForWebhook("client");
+    const internalUrl=await ensurePdfForWebhook("internal");
+
+    setStatus("Sending the completed IO to Smart 1 Suite…","");
+    const payload={
+      ...state,
+      client_pdf_url:clientUrl,
+      internal_pdf_url:internalUrl,
+      documents:{
+        ...(state.documents||{}),
+        client_pdf_url:clientUrl,
+        internal_pdf_url:internalUrl
+      }
+    };
+
+    const response=await fetch("/api/submit-io",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok || !result.ok){
+      throw new Error(result.error || "The Smart 1 Suite webhook did not accept the IO.");
+    }
+
+    state.submission={
+      status:"submitted",
+      submittedAt:new Date().toISOString(),
+      clientPdfUrl:clientUrl,
+      internalPdfUrl:internalUrl
+    };
+    setStatus("Completed IO sent to Smart 1 Suite successfully.","ok");
+    addMsg("The finished IO, including both Cloudinary PDF links, was sent to Smart 1 Suite.","bot");
+  }catch(error){
+    console.error(error);
+    setStatus(error.message || "Unable to submit the IO.","error");
+  }
+}
+
 </script>
 
 <div class="edit-modal" id="editModal">
@@ -1179,8 +1643,8 @@ render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been fil
    <div class="edit-group">
     <h3>Campaign Dates & Dayparting</h3>
     <label><input type="checkbox" id="e-same-dates"> Same start and end dates for every product</label>
-    <label>Shared Start Date</label><input id="e-start" placeholder="MM/DD/YYYY">
-    <label>Shared End Date</label><input id="e-end" placeholder="MM/DD/YYYY">
+    <label>Shared Start Date</label><input id="e-start" type="date">
+    <label>Shared End Date</label><input id="e-end" type="date">
     <label>Dayparting</label><input id="e-dayparting" placeholder="None, business hours, custom schedule, etc.">
    </div>
    <div class="edit-group">
@@ -1246,7 +1710,7 @@ render();addMsg("I’m your SMART1 Campaign Builder. Today’s date has been fil
    </div>
    <div class="upload-box">
     <strong>Validation behavior</strong>
-    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p>
+    <p class="tiny">The file will still upload when it does not match a known specification, but the order will show a warning. Display files larger than 150 KB are always flagged.</p><div id="smart1snapValidationWarning" class="callout" style="display:none;margin-top:8px"><strong>SMART1Snap warning:</strong> <span></span></div>
     <div id="uploadConnection" class="callout">Checking secure Cloudinary connection…</div>
    </div>
    <div class="upload-box wide asset-list"><strong>Creative added to this IO</strong><div id="creativeAssetList"></div></div>
