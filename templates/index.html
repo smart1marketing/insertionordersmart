@@ -132,6 +132,16 @@ td{padding:7px;border:1px solid var(--line);vertical-align:top}
 }
 input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
 
+
+.guardrail-list .warn{padding:8px 10px;margin:6px 0;border-left:4px solid #c56a00;background:#fff6e8;border-radius:4px}
+.traffic-card{border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0;background:#fff}
+.traffic-card h3{margin:0 0 10px;color:var(--navy)}
+.traffic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.traffic-grid>div{padding:8px;background:#f7f9fc;border-radius:6px;overflow-wrap:anywhere}
+.traffic-grid .wide{grid-column:1/-1}
+.traffic-grid code{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:700px){.traffic-grid{grid-template-columns:1fr}.traffic-grid .wide{grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -290,6 +300,24 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
   </div>
 
   <div class="section">
+   <div class="section-title">Campaign Guardrail Warnings</div>
+   <div id="guardrailWarnings" class="guardrail-list"><div class="empty">Warnings will appear as the plan is completed.</div></div>
+  </div>
+  <div class="section">
+   <div class="section-title">AI Media-Mix Recommendation</div>
+   <div class="toolbar" style="margin-bottom:8px">
+    <button type="button" onclick="requestMediaMixRecommendation()">Generate Recommendation</button>
+    <button type="button" onclick="acceptMediaMix()">Accept Suggested Allocations</button>
+    <button type="button" onclick="keepMediaMix()">Keep Original Plan</button>
+   </div>
+   <div id="mediaMixStatus" class="tiny"></div>
+   <div id="mediaMixRecommendation" class="strategy-list"><div class="empty">No recommendation generated.</div></div>
+  </div>
+  <div class="section">
+   <div class="section-title">Product-Specific Trafficking Notes</div>
+   <div id="traffickingCards"></div>
+  </div>
+  <div class="section">
    <div class="section-title">Internal Needs — Landing Page Review</div>
    <div id="landingPageReviews" class="strategy-list"><div class="empty">Landing-page reviews will appear after URLs are entered.</div></div>
   </div>
@@ -310,6 +338,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
 </div>
 
 <script>
+
+const conversionOptions=["Form completion","Phone calls","Purchases","Directions","Appointments","Store visits","Promo-code usage","Offline sales","Revenue tracking","CRM status feedback"];
+
 const objectiveKPIs={
  "Brand Awareness":["Impressions","Reach","Frequency","Video Completion Rate","Audio Completion Rate"],
  "Lead Generation":["Form Submissions","Cost Per Lead","Conversion Rate"],
@@ -402,7 +433,7 @@ const daypartOptions=["No dayparting — run all day","Weekdays only","Business 
 const state={
  date:new Date().toLocaleDateString("en-US"),orderNumber:"",ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",landingPageReviews:[],geoType:"",geoOrigin:"",geoRadius:"",geoDMA:"",geoOther:"",geoZipcodes:"",geo:"",industry:"",descriptionMode:"",description:"",
  sameDates:null,start:"",end:"",dayparting:"",objectives:[],kpis:[],creativeSource:"",gender:"",ages:[],income:[],audiences:[],audienceNotes:"",
- selectedCategories:[],currentCategory:"",selected:[],items:[],creativeAssets:[],creativeChecklist:{},internalWarnings:[],generatedDocuments:{},aiDescription:"",exclusions:"",strategy:{},recommendations:[]
+ selectedCategories:[],currentCategory:"",selected:[],items:[],creativeAssets:[],creativeChecklist:{},internalWarnings:[],generatedDocuments:{},aiDescription:"",exclusions:"",strategy:{},recommendations:[],managementFee:"",creativeFee:"",campaignOwner:"",specialInstructions:"",frequencyCap:"",trackingPlan:{primaryConversion:"",secondaryConversions:[],ga4:"",gtm:"",callTracking:"",thankYouPage:"",offlineImport:"",verifier:""},guardrailWarnings:[],mediaMixRecommendation:{},mediaMixDecision:"",naming:{}
 };
 
 let flow=[],index=0,currentProduct=0,tempItem=null,finished=false;
@@ -443,6 +474,19 @@ function baseFlow(){
   {key:"productCategory",q:"Choose a product category.",options:productCategories},
   {key:"selected",q:"Choose all products needed from this category, then choose Continue.",multi:true,dynamicOptions:()=>productsForCategory(state.currentCategory)},
   {key:"moreCategory",q:"Would you like to add products from another category?",options:["Yes","No"]},
+  {key:"primaryConversion",q:"What is the primary conversion the campaign should track?",options:conversionOptions},
+  {key:"secondaryConversions",q:"Which secondary conversions should also be tracked? Select all that apply, then choose Continue.",multi:true,options:conversionOptions},
+  {key:"ga4",q:"Is GA4 installed and accessible?",options:["Yes","No","Unknown"]},
+  {key:"gtm",q:"Is Google Tag Manager installed and accessible?",options:["Yes","No","Unknown"]},
+  {key:"callTracking",q:"Is call tracking required?",options:["Yes","No","Unknown"]},
+  {key:"thankYouPage",q:"Does the form or conversion path have a dedicated thank-you page?",options:["Yes","No","Not applicable","Unknown"]},
+  {key:"offlineImport",q:"Is offline conversion import needed?",options:["Yes","No","Unknown"]},
+  {key:"verifier",q:"Who will verify tracking before launch?"},
+  {key:"campaignOwner",q:"Who is the internal campaign owner?"},
+  {key:"frequencyCap",q:"What frequency cap should be used? Type AUTO to use the platform recommendation."},
+  {key:"managementFee",q:"What management fee should be included? Enter an amount, percentage, INCLUDED, or NONE."},
+  {key:"creativeFee",q:"What creative fee should be included? Enter an amount, INCLUDED, or NONE."},
+  {key:"specialInstructions",q:"Add any product or trafficking special instructions, or type NONE."},
   {key:"creativeSource",q:"Is Smart 1 building the creative, or is the creative being supplied?",options:["Smart 1 is building the creative","Creative is being supplied"]},
   {key:"exclusions",q:"Are there any exclusions, negative keywords, restricted audiences, placements, geographic areas, competitors, or other items we should be aware of? Type NONE if there are none."}
  ];
@@ -530,6 +574,94 @@ function suggestedAudienceOptions(){
  return [...new Set([...(base.behavioral||[]),...(base.contextual||[]),...extras])];
 }
 
+
+async function requestMediaMixRecommendation(){
+ const status=document.getElementById("mediaMixStatus");
+ if(status)status.textContent="Building recommendation…";
+ const payload={
+  client:state.client,goals:state.objectives,industry:state.industry,geography:state.geo,
+  monthly_budget:state.items.reduce((s,i)=>s+Number(i.budget||0),0),
+  total_campaign_budget:state.items.reduce((s,i)=>s+Number(i.campaignBudget||0),0),
+  campaign_duration:campaignLength(),audiences:state.audiences,
+  creative_source:state.creativeSource,creative_assets:state.creativeAssets.map(a=>({product:a.productLabel||a.product,status:a.status,evergreen:a.evergreen,validation:a.validationStatus})),
+  landing_page_reviews:state.landingPageReviews,
+  selected_products:state.items.map(i=>({product:(productConfig[i.product]||{}).product||i.product,monthly_budget:i.budget,rate:i.rate,start:i.start,end:i.end})),
+  available_products:Object.values(productConfig).map(p=>({product:p.product,category:p.category,listed_rate:p.listedRate}))
+ };
+ try{
+  const res=await fetch("/api/media-mix-recommendation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok||!data.ok)throw new Error(data.error||"Recommendation failed");
+  state.mediaMixRecommendation=data.recommendation||{};
+  state.mediaMixDecision="";
+  renderMediaMix();
+  render();
+ }catch(err){
+  if(status)status.textContent=`Unable to create recommendation: ${err.message}`;
+ }
+}
+function acceptMediaMix(){
+ const mix=state.mediaMixRecommendation||{};
+ const allocations=mix.suggested_allocations||[];
+ allocations.forEach(a=>{
+  const match=state.items.find(i=>((productConfig[i.product]||{}).product||i.product).toLowerCase()===String(a.product||"").toLowerCase());
+  if(match&&Number(a.monthly_budget)>0){match.budget=Number(a.monthly_budget);recalculateItem(match)}
+ });
+ state.mediaMixDecision="Accepted suggested allocations for matching selected products";
+ calculateGuardrails();render();
+}
+function keepMediaMix(){
+ state.mediaMixDecision="Kept salesperson's original media plan";
+ render();
+}
+
+function creativeForProduct(item){
+ const label=(productConfig[item.product]||{}).product||item.product;
+ return state.creativeAssets.filter(a=>(a.product===item.product||a.productLabel===label)).map(a=>a.fileName||a.status||"Creative").join(", ")||"None attached";
+}
+function renderTraffickingCards(){
+ const box=document.getElementById("traffickingCards");if(!box)return;
+ generateNaming();
+ if(!state.items.length){box.innerHTML='<div class="empty">No products selected.</div>';return}
+ box.innerHTML=state.items.map(item=>{
+  const cfg=productConfig[item.product]||{},names=(state.naming.products||{})[item.product]||{};
+  return `<div class="traffic-card">
+   <h3>${esc(cfg.product||item.product)}</h3>
+   <div class="traffic-grid">
+    <div><strong>Budget</strong><br>${money(item.budget||0)} monthly<br>${money(item.campaignBudget||0)} campaign</div>
+    <div><strong>Dates</strong><br>${esc(item.start||"—")} to ${esc(item.end||"—")}</div>
+    <div><strong>Audience</strong><br>${esc(state.audiences.join(", ")||"—")}</div>
+    <div><strong>Geography</strong><br>${esc(state.geo||"—")}</div>
+    <div><strong>Landing page</strong><br>${item.landingUrl||state.landingUrl?`<a target="_blank" href="${esc(item.landingUrl||state.landingUrl)}">${esc(item.landingUrl||state.landingUrl)}</a>`:"—"}</div>
+    <div><strong>Creative files</strong><br>${esc(creativeForProduct(item))}</div>
+    <div><strong>Tracking events</strong><br>${esc([state.trackingPlan.primaryConversion,...state.trackingPlan.secondaryConversions].filter(Boolean).join(", ")||"—")}</div>
+    <div><strong>Frequency cap</strong><br>${esc(state.frequencyCap||"AUTO")}</div>
+    <div><strong>Dayparting</strong><br>${esc(state.dayparting||"—")}</div>
+    <div><strong>Exclusions</strong><br>${esc(state.exclusions||"None")}</div>
+    <div><strong>KPIs</strong><br>${esc(state.kpis.join(", ")||"—")}</div>
+    <div><strong>Campaign owner</strong><br>${esc(state.campaignOwner||"—")}</div>
+    <div class="wide"><strong>Special instructions</strong><br>${esc(state.specialInstructions||"None")}</div>
+    <div class="wide"><strong>Campaign name</strong><br><code>${esc(names.campaign||"")}</code></div>
+    <div class="wide"><strong>Ad-group name</strong><br><code>${esc(names.adGroup||"")}</code></div>
+    <div class="wide"><strong>Creative name</strong><br><code>${esc(names.creative||"")}</code></div>
+    <div class="wide"><strong>Cloudinary folder</strong><br><code>${esc(names.folder||"")}</code></div>
+   </div>
+  </div>`;
+ }).join("");
+}
+
+function renderMediaMix(){
+ const box=document.getElementById("mediaMixRecommendation");
+ if(!box)return;
+ const m=state.mediaMixRecommendation||{};
+ if(!m.summary&&!m.primary_product){
+  box.innerHTML='<div class="empty">Generate an AI recommendation after the products, budget, creative and landing pages are available.</div>';
+  return;
+ }
+ const allocations=(m.suggested_allocations||[]).map(a=>`<li><strong>${esc(a.product||"")}</strong>: ${money(a.monthly_budget||0)} (${esc(a.percent||"")}%) — ${esc(a.reason||"")}</li>`).join("");
+ box.innerHTML=`<p>${esc(m.summary||"")}</p><p><strong>Primary:</strong> ${esc(m.primary_product||"—")}</p><p><strong>Supporting:</strong> ${esc((m.supporting_products||[]).join(", ")||"—")}</p><p><strong>Do not include:</strong> ${esc((m.excluded_products||[]).join(", ")||"—")}</p><p><strong>Suggested test budget:</strong> ${esc(m.suggested_test_budget||"—")} &nbsp; <strong>Minimum run:</strong> ${esc(m.minimum_run_length||"—")}</p>${allocations?`<ul>${allocations}</ul>`:""}<p><strong>Decision:</strong> ${esc(state.mediaMixDecision||"Not selected")}</p>`;
+}
+
 async function allocateOrderNumber(){
  if(state.orderNumber)return state.orderNumber;
  const response=await fetch("/api/next-order-number",{method:"POST"});
@@ -556,6 +688,7 @@ function multiArrayFor(key){
  if(key==="income")return state.income;
  if(key==="audiences")return state.audiences;
  if(key==="selected")return state.selected;
+ if(key==="secondaryConversions")return state.trackingPlan.secondaryConversions;
  return [];
 }
 function optionLabel(key,value){
@@ -810,6 +943,11 @@ async function submit(raw){
   render();ask();return
  }
  
+ 
+ if(["primaryConversion","ga4","gtm","callTracking","thankYouPage","offlineImport","verifier"].includes(q.key)){
+  state.trackingPlan[q.key]=val;index++;render();ask();return
+ }
+
  if(q.key==="productBudgetChanges"){
   tempItem.budgetChangesAsked=/^y(es)?$/i.test(val);
   if(!tempItem.budgetChangesAsked)tempItem.pendingBudgetChange=null;
@@ -859,6 +997,103 @@ function campaignLength(){
  if(!starts.length||!ends.length)return{days:0,weeks:0,months:1};
  return lengthFor(new Date(Math.min(...starts)).toLocaleDateString(),new Date(Math.max(...ends)).toLocaleDateString())
 }
+
+
+function cleanName(value){return String(value||"").trim().replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"")}
+function primaryMarketName(){
+ if(state.geoType==="DMA")return cleanName(state.geoDMA);
+ if(state.geoType==="City/ZIP Code + Radius")return cleanName(state.geoOrigin);
+ return cleanName((state.geoOther||state.geo||"Market").split(/[|,]/)[0]);
+}
+function generateNaming(){
+ const client=cleanName(state.client||"Client"),market=primaryMarketName()||"Market";
+ const start=(state.start||state.items[0]?.start||"").slice(0,7);
+ const objective=cleanName(state.objectives[0]||"Campaign");
+ const order=cleanName(state.orderNumber||"Order");
+ const products={};
+ state.items.forEach(item=>{
+  const cfg=productConfig[item.product]||{};
+  const product=cleanName(cfg.product||item.product);
+  const campaign=`S1M_${order}_${client}_${product}_${market}_${cleanName(item.start||state.start)}`;
+  const platform=/facebook|instagram|meta/i.test(`${cfg.category} ${cfg.product}`)?"Meta":product;
+  const adGroup=`${order}_${client}_${objective}_${market}_${cleanName(start)}`;
+  const creative=`${order}_${client}_${platform}_SIZE_V1`;
+  const folder=`smart1_campaigns/${order}_${client}/${cleanName(item.start||state.start)}/${product}`;
+  products[item.product]={campaign,adGroup,creative,folder};
+ });
+ state.naming={products};
+ return state.naming;
+}
+
+function parseMoney(text){
+ const m=String(text||"").replace(/,/g,"").match(/(\d+(?:\.\d+)?)/);
+ return m?Number(m[1]):0;
+}
+function parseMinimumMonths(item){
+ const text=`${item.requirements||""} ${item.timeline||""} ${item.listedRate||""}`;
+ const m=text.match(/(\d+)\s*month\s*minimum/i);
+ return m?Number(m[1]):0;
+}
+function geographyScale(){
+ if(state.geoType==="DMA")return "large";
+ if(state.geoType==="City/ZIP Code + Radius"){
+  const r=Number(state.geoRadius||0);
+  if(r>=50)return"large"; if(r>=20)return"medium"; return"small";
+ }
+ return "custom";
+}
+function calculateGuardrails(){
+ const warnings=[];
+ const monthly=state.items.reduce((s,i)=>s+Number(i.budget||0),0);
+ const geoScale=geographyScale();
+ state.items.forEach(item=>{
+  const cfg=productConfig[item.product]||{};
+  const listed=parseMoney(cfg.listedRate);
+  const minBudget=listed>0 && !/CPM|CPV/i.test(cfg.listedRate||"") ? listed : 0;
+  if(minBudget && Number(item.budget||0)<minBudget){
+   warnings.push({type:"budget_below_minimum",product:cfg.product,message:`${cfg.product}: monthly budget ${money(item.budget||0)} appears below the listed minimum or base rate of ${money(minBudget)}.`});
+  }
+  const minMonths=parseMinimumMonths(item);
+  const run=lengthFor(item.start,item.end).months;
+  if(minMonths && run<minMonths){
+   warnings.push({type:"term_below_minimum",product:cfg.product,message:`${cfg.product}: campaign length is ${run.toFixed(1)} months, below the ${minMonths}-month minimum.`});
+  }
+  if((cfg.rate==="CPM"||cfg.rate==="CPV")&&item.rate){
+   const normal=Number(cfg.defaultRate||0);
+   const actual=Number(item.rate||0);
+   if(normal && (actual<normal*.75||actual>normal*1.35)){
+    warnings.push({type:"rate_outside_range",product:cfg.product,message:`${cfg.product}: entered ${cfg.rate} ${actual} is outside the normal range around the rate-card value of ${normal}.`});
+   }
+  }
+  const name=`${cfg.category||""} ${cfg.product||""}`.toLowerCase();
+  if(/search engine marketing|pay per click|paid search|google ads/.test(name)&&Number(item.budget||0)<1500){
+   warnings.push({type:"search_budget_low",product:cfg.product,message:`${cfg.product}: monthly search budget below $1,500 may not produce meaningful volume in many markets.`});
+  }
+  if((cfg.rate==="CPM")&&item.rate>0){
+   const monthlyImpressions=(Number(item.budget||0)/Number(item.rate))*1000;
+   const estAudience=geoScale==="large"?500000:geoScale==="medium"?150000:50000;
+   const freq=monthlyImpressions/estAudience;
+   if(freq<1.5){
+    warnings.push({type:"frequency_low",product:cfg.product,message:`${cfg.product}: estimated frequency may be below 1.5 per month for the selected geography.`});
+   }
+  }
+ });
+ if((geoScale==="large"&&monthly<5000)||(geoScale==="medium"&&monthly<2500)){
+  warnings.push({type:"geo_budget_low",message:`The combined monthly budget of ${money(monthly)} may be too small for the selected ${state.geoType||"geography"}.`});
+ }
+ if(state.items.length>=4 && monthly/state.items.length<1000){
+  warnings.push({type:"too_many_products",message:`The budget is split across ${state.items.length} products, averaging only ${money(monthly/state.items.length)} per product.`});
+ }
+ if(!state.managementFee||/^none$/i.test(state.managementFee)){
+  warnings.push({type:"management_fee_missing",message:"Management fee is missing or marked NONE. Confirm that this is intentional."});
+ }
+ if(state.creativeSource==="Smart 1 is building the creative"&&(!state.creativeFee||/^none$/i.test(state.creativeFee))){
+  warnings.push({type:"creative_fee_missing",message:"Smart 1 is building creative, but no creative fee is listed."});
+ }
+ state.guardrailWarnings=warnings;
+ return warnings;
+}
+
 function activeMonthlyBudget(item,date){
  const t=new Date(date).getTime();
  const change=(item.budgetChanges||[]).find(c=>{
@@ -1013,6 +1248,13 @@ function render(){
  const rec=document.getElementById("recommendations");
  if(state.recommendations.length)rec.innerHTML=state.recommendations.map(r=>`<li>${esc(r)}</li>`).join("");
  renderCreativeChecklist();
+ calculateGuardrails();
+ generateNaming();
+ const gw=document.getElementById("guardrailWarnings");
+ if(gw)gw.innerHTML=state.guardrailWarnings.length?state.guardrailWarnings.map(w=>`<div class="warn">⚠ ${esc(w.message||w)}</div>`).join(""):'<div class="empty">No guardrail warnings.</div>';
+ renderMediaMix();
+ renderTraffickingCards();
+
  const lpBox=document.getElementById("landingPageReviews");
  if(lpBox)lpBox.innerHTML=state.landingPageReviews.length?state.landingPageReviews.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><strong>${esc(r.product)}</strong><br><a href="${esc(r.url)}" target="_blank">${esc(r.url)}</a><div class="value" style="margin-top:7px">${esc(r.review)}</div></div>`).join(""):'<div class="empty">Landing-page reviews will appear after URLs are entered.</div>';
  const warningBox=document.getElementById("internalWarnings");

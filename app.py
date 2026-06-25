@@ -370,6 +370,38 @@ def _build_requirements_pdf(data, doc_type):
             for warning in warnings:
                 story.append(_p('⚠ ' + str(warning), styles['S1Body']))
 
+
+    guardrails = data.get('guardrailWarnings') or []
+    if guardrails and doc_type == 'internal':
+        story.append(Paragraph('Campaign Guardrail Warnings', styles['S1H2']))
+        for warning in guardrails:
+            story.append(_p('⚠ ' + str(warning.get('message') if isinstance(warning, dict) else warning), styles['S1Body']))
+
+    tracking = data.get('trackingPlan') or {}
+    if tracking:
+        story.append(Paragraph('Tracking Plan', styles['S1H2']))
+        tracking_rows = [['Primary conversion', tracking.get('primaryConversion','')],
+                         ['Secondary conversions', ', '.join(tracking.get('secondaryConversions') or [])],
+                         ['GA4 installed', tracking.get('ga4','')],
+                         ['Google Tag Manager installed', tracking.get('gtm','')],
+                         ['Call tracking required', tracking.get('callTracking','')],
+                         ['Thank-you page available', tracking.get('thankYouPage','')],
+                         ['Offline conversion import', tracking.get('offlineImport','')],
+                         ['Tracking verifier', tracking.get('verifier','')]]
+        tt=Table(tracking_rows,colWidths=[1.8*inch,4.9*inch])
+        tt.setStyle(TableStyle([('GRID',(0,0),(-1,-1),0.35,colors.HexColor('#d5dee9')),('FONTNAME',(0,0),(0,-1),'Helvetica-Bold'),('VALIGN',(0,0),(-1,-1),'TOP'),('FONTSIZE',(0,0),(-1,-1),8)]))
+        story.append(tt)
+        story.append(Spacer(1,10))
+
+    mix = data.get('mediaMixRecommendation') or {}
+    if mix and doc_type == 'internal':
+        story.append(Paragraph('AI Media-Mix Recommendation', styles['S1H2']))
+        story.append(_p(mix.get('summary',''), styles['S1Body']))
+        story.append(_p('Primary product: ' + str(mix.get('primary_product','')), styles['S1Body']))
+        story.append(_p('Supporting products: ' + ', '.join(mix.get('supporting_products') or []), styles['S1Body']))
+        story.append(_p('Suggested test budget: ' + str(mix.get('suggested_test_budget','')), styles['S1Body']))
+        story.append(_p('Minimum run length: ' + str(mix.get('minimum_run_length','')), styles['S1Body']))
+
     if doc_type == 'client':
         story.append(Paragraph('What We Need From You', styles['S1H2']))
         for line in data.get('customerRequirements') or []:
@@ -469,6 +501,13 @@ def submit_io():
         "client_pdf_url": client_pdf_url,
         "internal_pdf_url": internal_pdf_url,
         "cloudinary_documents": data.get("documents", {}),
+        "management_fee": data.get("managementFee"),
+        "creative_fee": data.get("creativeFee"),
+        "tracking_plan": data.get("trackingPlan", {}),
+        "guardrail_warnings": data.get("guardrailWarnings", []),
+        "media_mix_recommendation": data.get("mediaMixRecommendation", {}),
+        "naming_conventions": data.get("naming", {}),
+        "campaign_owner": data.get("campaignOwner"),
         "campaign_data": data
     }
 
@@ -549,4 +588,44 @@ def review_landing_page():
         if getattr(exc, 'response', None) is not None:
             detail = (exc.response.text or '')[:500]
         return jsonify({'error': 'Landing-page review failed', 'detail': detail or str(exc)}), 502
+
+
+
+@app.post('/api/media-mix-recommendation')
+def media_mix_recommendation():
+    data = request.get_json(force=True) or {}
+    prompt = (
+        "Act as a senior digital media strategist. Review the campaign intake below and recommend a practical media mix. "
+        "Base the recommendation on goals, industry, geography, total and monthly budget, campaign duration, audience, available creative, "
+        "landing-page quality, and the products available in the supplied rate-card list. Avoid inventing products. "
+        "Return strict JSON with these keys: summary, primary_product, supporting_products, excluded_products, suggested_allocations, "
+        "suggested_test_budget, minimum_run_length, rationale, warnings. "
+        "suggested_allocations must be an array of objects with product, monthly_budget, percent, reason. "
+        "supporting_products, excluded_products, and warnings must be arrays. Keep the advice concise and operational.\n\n"
+        + json.dumps(data, ensure_ascii=False)
+    )
+    try:
+        text = _openai_response(prompt, max_output_tokens=6000)
+        cleaned = text.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r'^```(?:json)?\s*|\s*```$', '', cleaned, flags=re.I|re.S)
+        result = json.loads(cleaned)
+        return jsonify({'ok': True, 'recommendation': result})
+    except json.JSONDecodeError:
+        return jsonify({'ok': True, 'recommendation': {
+            'summary': text if 'text' in locals() else '',
+            'primary_product': '',
+            'supporting_products': [],
+            'excluded_products': [],
+            'suggested_allocations': [],
+            'suggested_test_budget': '',
+            'minimum_run_length': '',
+            'rationale': '',
+            'warnings': ['AI returned a narrative recommendation instead of structured JSON.']
+        }})
+    except Exception as exc:
+        detail = ''
+        if getattr(exc, 'response', None) is not None:
+            detail = (exc.response.text or '')[:500]
+        return jsonify({'ok': False, 'error': 'Media-mix recommendation failed', 'detail': detail or str(exc)}), 502
 

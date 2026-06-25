@@ -111,3 +111,36 @@ The builder now supports:
 For radius targeting, the OpenAI Responses API with web search returns a comma-separated ZIP Code list. This is an AI-assisted operational list and should be reviewed before campaign trafficking; an LLM cannot mathematically guarantee every ZIP polygon intersection without an authoritative geospatial boundary dataset.
 
 Every shared or product-specific landing page is reviewed through OpenAI. CTA and conversion recommendations are stored in `landingPageReviews`, displayed under Internal Needs, included in the internal PDF, exported with campaign data, and sent in the GoHighLevel webhook payload.
+
+
+## Version 10 additions
+
+### Guardrail warnings
+The browser recalculates warnings for:
+- Product budget below an identifiable listed minimum/base rate
+- Campaign term below a stated minimum contract term
+- CPM/CPV materially outside the rate-card value
+- Budget too small for the selected geography
+- Too many products splitting a small monthly budget
+- Estimated frequency likely below 1.5 per month
+- Search budget below $1,500 monthly
+- Missing management fee
+- Missing creative fee when Smart 1 is building creative
+
+These are operational warnings, not hard blocks.
+
+### AI media mix
+The new `/api/media-mix-recommendation` route uses the configured OpenAI Responses API model and receives goals, industry, geography, budgets, duration, audiences, creative availability, landing-page reviews, selected products, and the product catalog. The salesperson can accept suggested allocations for matching selected products or keep the original plan.
+
+### Tracking plan
+The conversational flow collects primary and secondary conversions, GA4, GTM, call tracking, thank-you page status, offline conversion import, and the person responsible for verification.
+
+### Product trafficking cards
+Each selected product receives a self-contained trafficking card with budget, dates, audience, geography, landing page, creative files, tracking, frequency cap, dayparting, exclusions, KPIs, instructions, owner, and generated naming conventions.
+
+### Naming conventions
+Generated names include:
+- Campaign: `S1M_Order_Client_Product_Market_StartDate`
+- Ad group: `Order_Client_Objective_Market_YYYY-MM`
+- Creative: `Order_Client_Platform_SIZE_V1`
+- Cloudinary folder by order, client, date, and product
