@@ -161,3 +161,25 @@ Optional Render environment variable:
 - `ORDER_COUNTER_CLOUDINARY_ID=smart1_system/order_counter.json`
 
 When Cloudinary is unavailable, the app uses `/tmp/smart1_order_counter.json` only as an emergency fallback and adds an internal warning because temporary storage can reset.
+
+## Corrected workflow update
+- Flask routes now register before the server starts.
+- ZIP-radius lookup runs without blocking the intake and its status is visible at final review.
+- Landing-page reviews are deferred until final review and do not block questions.
+- Business descriptions are capped at 600 characters.
+- Product detail entry includes Cancel Product.
+- Empty/not-applicable visible values use X.
+- Campaign, ad-group, creative, and Cloudinary naming fields were removed from trafficking cards and webhook data.
+- Customer and internal PDF links remain visible after generation.
+- Final submission uses the working requirements-PDF endpoint, preserves a local draft, returns a reference on failure, and displays Smart 1 Suite webhook status.
+## Smart 1 Suite category
+
+The obsolete **PROGRAMMATIC CAMPAIGN — Select Tactics - Comes with Retargeting** entry has been removed.
+
+The **SMART 1 SUITE** category contains:
+
+- **Consulting / Strategy / Reporting** — collects a monthly billing amount only.
+- **Smart 1 Suite** — collects a monthly billing amount only and requests official connector access to all applicable social platforms and Google Business Profile (GMB).
+
+These monthly services do not request CPM, CPV, delivery estimates, or mid-campaign budget schedules.
+

@@ -12,6 +12,8 @@ import cloudinary.utils
 import cloudinary.uploader
 import cloudinary.api
 import requests
+import re
+import uuid
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
@@ -181,8 +183,8 @@ def generate_business_description():
     prompt = (
         'Research this business carefully using its official website and any clearly authoritative pages linked from it: '
         + ', '.join(urls) + '.\n'
-        'Write a comprehensive internal business description for the person who will execute a digital advertising campaign. '
-        'Use approximately 2 to 5 short paragraphs. Explain what the company does, its main products and services, the customer problems it solves, '
+        'Write a concise internal business description for a digital advertising campaign. '
+        'Use no more than 600 characters total. Explain what the company does, its main products and services, the customer problems it solves, '
         'who its likely customers are, its service area or locations, important differentiators, offers or conversion paths visible on the site, '
         'and any operational details that would help a media buyer understand the business. '
         'Mention regulated or restricted categories when relevant. Do not invent unsupported claims, awards, service areas, years in business, or capabilities. '
@@ -192,7 +194,7 @@ def generate_business_description():
         'Return only the finished business description.'
     )
     try:
-        description = _openai_response(prompt, max_output_tokens=5000)
+        description = _openai_response(prompt, max_output_tokens=900)[:600].rstrip()
         if not description:
             return jsonify({'error': 'OpenAI returned no description'}), 502
         return jsonify({'description': description})
@@ -532,10 +534,6 @@ def generate_requirements_pdf():
         return jsonify({'error':'PDF generation failed','detail':str(exc)}), 500
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)
-
-
 @app.errorhandler(Exception)
 def handle_unexpected_error(exc):
     logger.exception('Unhandled application error')
@@ -550,6 +548,9 @@ def submit_io():
         return jsonify({"ok": False, "error": "GHL_WEBHOOK_URL is not configured on the server."}), 500
 
     data = request.get_json(silent=True) or {}
+    data.pop("naming", None)
+    if isinstance(data.get("campaign_data"), dict):
+        data["campaign_data"].pop("naming", None)
     client_pdf_url = str(data.get("client_pdf_url") or "").strip()
     internal_pdf_url = str(data.get("internal_pdf_url") or "").strip()
 
@@ -563,6 +564,7 @@ def submit_io():
     payload = {
         "event": "smart1_io_completed",
         "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "submission_id": str(data.get("submissionId") or uuid.uuid4()),
         "io_type": data.get("ioType"),
         "client_name": data.get("client"),
         "client_website": data.get("url"),
@@ -574,6 +576,7 @@ def submit_io():
         "campaign_goals": data.get("objectives", []),
         "kpis": data.get("kpis", []),
         "geographic_target": data.get("geo"),
+        "zip_codes": data.get("geoZipcodes", ""),
         "audiences": data.get("audiences", []),
         "income_targets": data.get("incomes", data.get("income", [])),
         "dayparting": data.get("dayparting"),
@@ -592,8 +595,7 @@ def submit_io():
         "tracking_plan": data.get("trackingPlan", {}),
         "guardrail_warnings": data.get("guardrailWarnings", []),
         "media_mix_recommendation": data.get("mediaMixRecommendation", {}),
-        "naming_conventions": data.get("naming", {}),
-        "campaign_owner": data.get("campaignOwner"),
+                "campaign_owner": data.get("campaignOwner"),
         "campaign_data": data
     }
 
@@ -614,6 +616,8 @@ def submit_io():
         "ok": True,
         "status_code": response.status_code,
         "message": "The completed IO was sent to Smart 1 Suite.",
+        "webhook_status": "delivered",
+        "webhook_response": response.text[:500],
         "client_pdf_url": client_pdf_url,
         "internal_pdf_url": internal_pdf_url
     })
@@ -715,3 +719,7 @@ def media_mix_recommendation():
             detail = (exc.response.text or '')[:500]
         return jsonify({'ok': False, 'error': 'Media-mix recommendation failed', 'detail': detail or str(exc)}), 502
 
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)
