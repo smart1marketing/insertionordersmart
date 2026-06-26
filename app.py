@@ -1,3 +1,5 @@
+import time
+import tempfile
 import json
 import threading
 from datetime import datetime, timezone
@@ -8,6 +10,7 @@ from flask import Flask, jsonify, render_template, request
 import cloudinary
 import cloudinary.utils
 import cloudinary.uploader
+import cloudinary.api
 import requests
 from urllib.parse import urlparse
 from dotenv import load_dotenv
@@ -42,6 +45,7 @@ def health():
         'cloudinary_configured': bool(os.getenv('CLOUDINARY_URL')),
         'brandfetch_configured': bool(os.getenv('BRANDFETCH_API_KEY')),
         'openai_configured': bool(os.getenv('OPENAI_API_KEY')),
+        'order_counter_storage': 'cloudinary' if _cloudinary_is_configured() else 'temporary',
     })
 
 @app.get('/')
@@ -216,31 +220,113 @@ def cloudinary_signature():
 
 _ORDER_LOCK = threading.Lock()
 
-def _order_counter_path():
-    return Path(os.environ.get("ORDER_COUNTER_FILE", "/var/data/smart1_order_counter.json"))
+def _cloudinary_counter_public_id():
+    return os.environ.get(
+        "ORDER_COUNTER_CLOUDINARY_ID",
+        "smart1_system/order_counter.json"
+    ).strip()
+
+def _cloudinary_is_configured():
+    cfg = cloudinary.config()
+    return bool(cfg.cloud_name and cfg.api_key and cfg.api_secret)
+
+def _read_cloudinary_order_counter():
+    """Read the last allocated order number from a private system JSON asset."""
+    public_id = _cloudinary_counter_public_id()
+    try:
+        resource = cloudinary.api.resource(public_id, resource_type="raw", type="upload")
+        url = resource.get("secure_url")
+        if not url:
+            return 10199
+        response = requests.get(
+            url,
+            params={"cb": str(int(time.time() * 1000))},
+            timeout=20,
+            headers={"Cache-Control": "no-cache"},
+        )
+        response.raise_for_status()
+        stored = response.json()
+        return int(stored.get("last_order_number", 10199))
+    except Exception as exc:
+        # A missing asset is expected the first time the app creates order 10200.
+        message = str(exc).lower()
+        if "not found" not in message and "404" not in message:
+            logger.warning("Unable to read Cloudinary order counter: %s", exc)
+        return 10199
+
+def _write_cloudinary_order_counter(number):
+    public_id = _cloudinary_counter_public_id()
+    payload = json.dumps({
+        "last_order_number": int(number),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    })
+    with tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8", delete=False) as handle:
+        handle.write(payload)
+        temp_path = handle.name
+    try:
+        cloudinary.uploader.upload(
+            temp_path,
+            resource_type="raw",
+            type="upload",
+            public_id=public_id,
+            overwrite=True,
+            unique_filename=False,
+            use_filename=False,
+            invalidate=True,
+            tags=["smart1_system", "smart1_order_counter"],
+        )
+    finally:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
+def _temporary_counter_path():
+    return Path(os.environ.get(
+        "ORDER_COUNTER_FALLBACK_FILE",
+        "/tmp/smart1_order_counter.json"
+    ))
+
+def _next_temporary_order_number():
+    """Emergency fallback only. This can reset after a Render restart."""
+    path = _temporary_counter_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    current = 10199
+    if path.exists():
+        try:
+            current = int(json.loads(path.read_text(encoding="utf-8")).get("last_order_number", current))
+        except Exception:
+            logger.exception("Unable to read temporary order counter")
+    next_number = current + 1
+    path.write_text(json.dumps({"last_order_number": next_number}), encoding="utf-8")
+    return next_number
 
 def _next_order_number():
-    """Return the next persistent order number, starting with 10200."""
-    path = _order_counter_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
+    """Return the next order number, beginning with 10200."""
     with _ORDER_LOCK:
-        current = 10199
-        if path.exists():
-            try:
-                stored = json.loads(path.read_text(encoding="utf-8"))
-                current = int(stored.get("last_order_number", current))
-            except Exception:
-                logger.exception("Unable to read order counter; using starting value")
-        next_number = current + 1
-        temp = path.with_suffix(".tmp")
-        temp.write_text(json.dumps({"last_order_number": next_number}), encoding="utf-8")
-        temp.replace(path)
-        return str(next_number)
+        if _cloudinary_is_configured():
+            current = _read_cloudinary_order_counter()
+            next_number = current + 1
+            _write_cloudinary_order_counter(next_number)
+            return str(next_number), "cloudinary", ""
+
+        next_number = _next_temporary_order_number()
+        warning = (
+            "Cloudinary is not configured, so the order number is using temporary "
+            "Render storage and may reset after a restart."
+        )
+        return str(next_number), "temporary", warning
 
 @app.post("/api/next-order-number")
 def next_order_number():
     try:
-        return jsonify({"ok": True, "order_number": _next_order_number()})
+        order_number, storage, warning = _next_order_number()
+        return jsonify({
+            "ok": True,
+            "order_number": order_number,
+            "storage": storage,
+            "warning": warning,
+        })
     except Exception as exc:
         logger.exception("Order number allocation failed")
         return jsonify({"ok": False, "error": str(exc)}), 500

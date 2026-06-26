@@ -144,3 +144,20 @@ Generated names include:
 - Ad group: `Order_Client_Objective_Market_YYYY-MM`
 - Creative: `Order_Client_Platform_SIZE_V1`
 - Cloudinary folder by order, client, date, and product
+
+
+## Version 11 order-number fix
+
+Order numbers no longer require a Render persistent disk at `/var/data`.
+
+The counter is stored as a small raw JSON system asset in the configured Cloudinary account:
+
+`smart1_system/order_counter.json`
+
+The first new IO receives order **10200**, followed by 10201, 10202, and so on. The counter survives Render restarts and deployments.
+
+Optional Render environment variable:
+
+- `ORDER_COUNTER_CLOUDINARY_ID=smart1_system/order_counter.json`
+
+When Cloudinary is unavailable, the app uses `/tmp/smart1_order_counter.json` only as an emergency fallback and adds an internal warning because temporary storage can reset.

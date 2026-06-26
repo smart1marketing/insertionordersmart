@@ -431,7 +431,7 @@ const industryIdeas={
 const incomeOptions=["No income targeting","Under $50,000","$50,000–$74,999","$75,000–$99,999","$100,000–$149,999","$150,000–$199,999","$200,000+"];
 const daypartOptions=["No dayparting — run all day","Weekdays only","Business hours","Evenings","Weekends","Custom schedule"];
 const state={
- date:new Date().toLocaleDateString("en-US"),orderNumber:"",ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",landingPageReviews:[],geoType:"",geoOrigin:"",geoRadius:"",geoDMA:"",geoOther:"",geoZipcodes:"",geo:"",industry:"",descriptionMode:"",description:"",
+ date:new Date().toLocaleDateString("en-US"),orderNumber:"",orderNumberStorage:"",ioType:"",partner:"",salesContact:"",salesEmail:"",client:"",url:"",brandfetch:{status:"not requested",name:"",domain:"",description:"",logo:"",colors:[],fonts:[],links:[],company:{}},landingMode:"",landingUrl:"",landingPageReviews:[],geoType:"",geoOrigin:"",geoRadius:"",geoDMA:"",geoOther:"",geoZipcodes:"",geo:"",industry:"",descriptionMode:"",description:"",
  sameDates:null,start:"",end:"",dayparting:"",objectives:[],kpis:[],creativeSource:"",gender:"",ages:[],income:[],audiences:[],audienceNotes:"",
  selectedCategories:[],currentCategory:"",selected:[],items:[],creativeAssets:[],creativeChecklist:{},internalWarnings:[],generatedDocuments:{},aiDescription:"",exclusions:"",strategy:{},recommendations:[],managementFee:"",creativeFee:"",campaignOwner:"",specialInstructions:"",frequencyCap:"",trackingPlan:{primaryConversion:"",secondaryConversions:[],ga4:"",gtm:"",callTracking:"",thankYouPage:"",offlineImport:"",verifier:""},guardrailWarnings:[],mediaMixRecommendation:{},mediaMixDecision:"",naming:{}
 };
@@ -668,6 +668,11 @@ async function allocateOrderNumber(){
  const result=await response.json().catch(()=>({}));
  if(!response.ok||!result.ok||!result.order_number)throw new Error(result.error||"Unable to create an order number.");
  state.orderNumber=String(result.order_number);
+ state.orderNumberStorage=result.storage||"";
+ if(result.warning){
+  if(!state.internalWarnings.includes(result.warning))state.internalWarnings.push(result.warning);
+  addMsg(`Order number storage warning: ${result.warning}`);
+ }
  return state.orderNumber;
 }
 

@@ -5,8 +5,8 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
-      - key: ORDER_COUNTER_FILE
-        value: /var/data/smart1_order_counter.json
+      - key: ORDER_COUNTER_CLOUDINARY_ID
+        value: smart1_system/order_counter.json
       - key: GHL_WEBHOOK_URL
         sync: false
       - key: CLOUDINARY_URL
@@ -19,8 +19,3 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-5-mini
-
-    disk:
-      name: smart1-order-data
-      mountPath: /var/data
-      sizeGB: 1
