@@ -144,12 +144,40 @@ def brandfetch_lookup():
 
 
 def _extract_response_text(result):
+    """Extract assistant text from current and legacy Responses API payload shapes."""
+    direct = result.get("output_text")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
     parts = []
     for item in result.get("output") or []:
+        if not isinstance(item, dict):
+            continue
         for content in item.get("content") or []:
-            if content.get("type") in ("output_text", "text") and content.get("text"):
-                parts.append(content["text"])
-    return "\n".join(parts).strip()
+            if not isinstance(content, dict):
+                continue
+            text = content.get("text")
+            if isinstance(text, str) and text.strip():
+                parts.append(text.strip())
+            elif isinstance(text, dict):
+                value = text.get("value") or text.get("text")
+                if isinstance(value, str) and value.strip():
+                    parts.append(value.strip())
+    if parts:
+        return "\n".join(parts).strip()
+
+    # Last-resort recursive extraction for minor response-schema changes.
+    def walk(value):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in {"output_text", "text", "value"} and isinstance(child, str) and child.strip():
+                    parts.append(child.strip())
+                else:
+                    walk(child)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child)
+    walk(result.get("output") or [])
+    return "\n".join(dict.fromkeys(parts)).strip()
 
 def _openai_response(prompt, max_output_tokens=6000):
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
@@ -167,8 +195,38 @@ def _openai_response(prompt, max_output_tokens=6000):
         json=payload,
         timeout=120,
     )
-    response.raise_for_status()
-    return _extract_response_text(response.json())
+    if response.status_code >= 400:
+        raise RuntimeError(f"OpenAI returned HTTP {response.status_code}: {(response.text or '')[:500]}")
+    result = response.json()
+    text = _extract_response_text(result)
+    if text:
+        return text
+
+    # Retry once without web search. Some accounts/models can return tool output
+    # without a final text message when web search is unavailable or restricted.
+    retry_payload = dict(payload)
+    retry_payload.pop("tools", None)
+    retry_payload["input"] = prompt + "\nUse only the information supplied in the prompt if browsing is unavailable. Return the requested final answer as plain text."
+    retry = requests.post(
+        "https://api.openai.com/v1/responses",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json=retry_payload,
+        timeout=120,
+    )
+    if retry.status_code >= 400:
+        raise RuntimeError(f"OpenAI retry returned HTTP {retry.status_code}: {(retry.text or '')[:500]}")
+    return _extract_response_text(retry.json())
+
+@app.get('/api/openai-status')
+def openai_status():
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        return jsonify({"ok": False, "configured": False, "error": "OPENAI_API_KEY is not configured"}), 503
+    try:
+        text = _openai_response("Reply with exactly: OPENAI_OK", max_output_tokens=20)
+        return jsonify({"ok": bool(text), "configured": True, "model": os.getenv("OPENAI_MODEL", "gpt-5-mini"), "response": text[:100]})
+    except Exception as exc:
+        return jsonify({"ok": False, "configured": True, "model": os.getenv("OPENAI_MODEL", "gpt-5-mini"), "error": str(exc)}), 502
 
 @app.post('/api/generate-business-description')
 def generate_business_description():
@@ -640,7 +698,7 @@ def zipcodes_in_radius():
         text = _openai_response(prompt, max_output_tokens=12000)
         zips = sorted(set(re.findall(r'\b\d{5}\b', text)))
         if not zips:
-            return jsonify({'error': 'No ZIP Codes were returned'}), 502
+            return jsonify({'error': 'No ZIP Codes were returned', 'detail': 'OpenAI completed the request but did not return any five-digit ZIP Codes.'}), 502
         return jsonify({
             'zipcodes': ', '.join(zips),
             'count': len(zips),

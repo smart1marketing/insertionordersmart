@@ -183,3 +183,13 @@ The **SMART 1 SUITE** category contains:
 
 These monthly services do not request CPM, CPV, delivery estimates, or mid-campaign budget schedules.
 
+
+## Current corrective update
+- Removed the PROGRAMMATIC CAMPAIGN category and its Select Tactics product.
+- Renamed the DISPLAY category to SOCIAL.
+- Added SMART 1 SUITE with Consulting / Strategy / Reporting and Smart 1 Suite monthly-billing products.
+- Added cancel controls during category selection and product setup.
+- Corrected customer PDF requirement generation.
+- Added OpenAI connection diagnostics and more robust Responses API text extraction.
+- Added request timeouts, ZIP and landing-page retry controls, and clearer Cloudinary upload status.
+- Corrected product editor columns to Product, Start Date, End Date, Monthly Budget, and CPM-CPV.
