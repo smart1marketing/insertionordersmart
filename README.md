@@ -193,3 +193,9 @@ These monthly services do not request CPM, CPV, delivery estimates, or mid-campa
 - Added OpenAI connection diagnostics and more robust Responses API text extraction.
 - Added request timeouts, ZIP and landing-page retry controls, and clearer Cloudinary upload status.
 - Corrected product editor columns to Product, Start Date, End Date, Monthly Budget, and CPM-CPV.
+
+## Build 2026.06.26-v4 deployment check
+
+After deployment, the page header must show `Build 2026.06.26-v4`. The server now sends no-cache headers so an older JavaScript bundle cannot keep producing the removed `customerItemsForProduct is not defined` error.
+
+The tracking-verification question now offers only `Client` or `Smart 1`.

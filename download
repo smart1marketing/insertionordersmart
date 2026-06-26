@@ -147,7 +147,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
 <body>
 <header>
  <h1>SMART1 Campaign Builder AI</h1>
- <span>Conversational intake • Media plan • Audience strategy • KPI framework • Delivery estimate</span>
+ <span>Conversational intake • Media plan • Audience strategy • KPI framework • Delivery estimate • Build 2026.06.26-v4</span>
 </header>
 <div class="app">
 <section class="chat-panel">
@@ -489,7 +489,7 @@ function baseFlow(){
   {key:"callTracking",q:"Is call tracking required?",options:["Yes","No","Unknown"]},
   {key:"thankYouPage",q:"Does the form or conversion path have a dedicated thank-you page?",options:["Yes","No","Not applicable","Unknown"]},
   {key:"offlineImport",q:"Is offline conversion import needed?",options:["Yes","No","Unknown"]},
-  {key:"verifier",q:"Who will verify tracking before launch?"},
+  {key:"verifier",q:"Who will verify tracking before launch?",options:["Client","Smart 1"]},
   {key:"campaignOwner",q:"Who is the internal campaign owner?"},
   {key:"frequencyCap",q:"What frequency cap should be used? Type AUTO to use the platform recommendation."},
   {key:"managementFee",q:"What management fee should be included? Enter an amount, percentage, INCLUDED, or X."},
@@ -1608,6 +1608,10 @@ function customerFriendlyNeeds(productKey){
  if(!items.length)add("Your logo, brand materials, approved message, destination link and an approval contact.","Any account access, campaign details or files listed by your Smart 1 representative.");
  return items;
 }
+// Backward-compatible alias retained so cached or older submission code cannot fail.
+function customerItemsForProduct(productKey){ return customerFriendlyNeeds(productKey); }
+window.customerItemsForProduct=customerItemsForProduct;
+
 function customerRequirementsText(){
  const lines=[`${state.client||"Client"} - What Smart 1 Needs to Get Started`,``,`Your Smart 1 contact: ${state.salesContact||""}${state.salesEmail?" | "+state.salesEmail:""}`,`Campaign dates: ${state.sameDates?(state.start+" to "+state.end):"Dates vary by product"}`,`Creative: ${state.creativeSource||"To be confirmed"}`,`Business website: ${state.url||""}`,`Landing pages: ${state.landingMode==="One landing page"?(state.landingUrl||"To be supplied"):"Listed by product below"}`,``, ...(brandfetchSummaryText()?[`BRAND INFORMATION FROM BRANDFETCH`,brandfetchSummaryText(),``]:[]), `For the overall campaign, please send:`,`- Your approved logo, brand colors/guidelines and best photos or videos`,`- The main offer or message, call to action, website/landing-page link and phone number to promote`,`- Any expiration dates, restrictions, legal wording or disclaimers`,`- The person who will approve creative and the best reporting contacts`,`- Competitors, negative keywords, locations, websites, audiences or topics we should avoid`,`- Any preferred days or hours for the campaign to run`,``,`Please grant access through each platform's official partner or manager tools. Please do not email personal passwords.`,``,`PRODUCT-SPECIFIC ITEMS`];
  state.selected.forEach(key=>{const cfg=productConfig[key]||{},item=state.items.find(i=>i.product===key);lines.push(``,`${cfg.product||key}`,`Landing page: ${(item&&item.landingUrl)||state.landingUrl||"To be supplied"}`);customerFriendlyNeeds(key).forEach(x=>lines.push(`- ${x}`));});
@@ -1697,8 +1701,8 @@ function toggleUploadFields(){document.getElementById("uploadFields").style.disp
 function clearCreativeForm(){document.getElementById("creativeFiles").value="";const ev=document.getElementById("creativeEvergreen");if(ev)ev.checked=false;document.getElementById("creativeNote").value="";document.getElementById("creativeStatus").value="upload";toggleUploadFields()}
 async function checkUploadConnection(){
  const el=document.getElementById("uploadConnection");
- try{const r=await fetchWithTimeout('/api/cloudinary-config',{},12000);if(!r.ok)throw new Error();const d=await r.json();el.innerHTML=`<strong>Cloudinary connected:</strong> ${esc(d.cloud_name||CLOUDINARY_CLOUD_NAME)}`;el.style.borderLeftColor="#178653"}
- catch(e){el.innerHTML='<strong>Upload server not connected.</strong> Open this builder through the included SMART1 server rather than as a standalone HTML file.';el.style.borderLeftColor="#e5a323"}
+ try{const r=await fetchWithTimeout('/api/cloudinary-config',{},12000);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||`Cloudinary check returned ${r.status}`);el.innerHTML=`<strong>Cloudinary connected:</strong> ${esc(d.cloud_name||CLOUDINARY_CLOUD_NAME)}`;el.style.borderLeftColor="#178653"}
+ catch(e){el.innerHTML=`<strong>Upload server not connected:</strong> ${esc(e.message||'Unknown connection error')}`;el.style.borderLeftColor="#e5a323"}
 }
 function fileExtension(name){return String(name).split('.').pop().toLowerCase()}
 function inspectMedia(file){return new Promise(resolve=>{
