@@ -161,3 +161,19 @@ Optional Render environment variable:
 - `ORDER_COUNTER_CLOUDINARY_ID=smart1_system/order_counter.json`
 
 When Cloudinary is unavailable, the app uses `/tmp/smart1_order_counter.json` only as an emergency fallback and adds an internal warning because temporary storage can reset.
+
+
+## Version 12 UI simplification
+
+The initial intake now uses a multipart workflow with visible sections:
+
+1. Campaign Overview
+2. Brand Profile
+3. Target Audience
+4. Audience Strategy
+5. Campaign Exclusions & Restrictions
+6. Campaign Timeline
+7. Creative Assets
+8. KPI Framework
+
+The chat area is compact and clears when moving into a new section, so the embedded GoHighLevel page does not grow into a long chat transcript. The creative upload popup is now launched from the guided flow, not only from the toolbar.
