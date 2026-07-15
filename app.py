@@ -1,6 +1,7 @@
 import time
 import tempfile
 import json
+import re
 import threading
 from datetime import datetime, timezone
 import os
@@ -383,11 +384,12 @@ def _build_requirements_pdf(data, doc_type):
         story.append(Paragraph('Brand Information', styles['S1H2']))
         brand_rows=[]
         logo_flow=''
-        logo_bytes=_fetch_image_bytes(b.get('logo'))
+        logo_url=b.get('logo')
+        logo_bytes=_fetch_image_bytes(logo_url)
         if logo_bytes:
             try:
                 img=RLImage(logo_bytes, width=1.2*inch, height=0.8*inch, kind='proportional')
-                logo_flow=[img, Paragraph(f'<link href="{xml_escape(b.get('logo'))}">Open full logo</link>', styles['S1Small'])]
+                logo_flow=[img, Paragraph(f'<link href="{xml_escape(logo_url)}">Open full logo</link>', styles['S1Small'])]
             except Exception:
                 logo_flow=_p(b.get('logo'), styles['S1Small'])
         elif b.get('logo'):
@@ -530,10 +532,6 @@ def generate_requirements_pdf():
     except Exception as exc:
         logger.exception('PDF generation failed')
         return jsonify({'error':'PDF generation failed','detail':str(exc)}), 500
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)
 
 
 @app.errorhandler(Exception)
@@ -715,3 +713,6 @@ def media_mix_recommendation():
             detail = (exc.response.text or '')[:500]
         return jsonify({'ok': False, 'error': 'Media-mix recommendation failed', 'detail': detail or str(exc)}), 502
 
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)

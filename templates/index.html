@@ -142,37 +142,18 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
 .traffic-grid code{white-space:normal;overflow-wrap:anywhere}
 @media(max-width:700px){.traffic-grid{grid-template-columns:1fr}.traffic-grid .wide{grid-column:auto}}
 
-
-.compact-chat .messages{max-height:360px;min-height:260px;overflow-y:auto}
-.section-stepper{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.section-pill{border:1px solid #c9d6e4;background:#f7fbff;color:#29435f;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:700}
-.section-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
-.section-pill.done{background:#e6f5ed;border-color:#9dd4b3;color:#11653d}
-.current-section-card{background:#f7fbff;border:1px solid #d9e6f2;border-radius:12px;padding:12px 14px;margin:10px 0}
-.section-eyebrow{text-transform:uppercase;letter-spacing:.06em;font-size:10px;font-weight:800;color:#55708f}
-.section-heading{font-size:18px;font-weight:800;color:var(--navy);margin-top:3px}
-.section-help{font-size:12px;line-height:1.4;color:#49627e;margin-top:4px}
-.section-break{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#49627e;background:#eef5fc;border:1px solid #d7e5f3;border-radius:999px;padding:7px 10px;margin:8px 0;text-align:center}
-.msg{white-space:pre-wrap}
-
 </style>
 </head>
 <body>
 <header>
  <h1>SMART1 Campaign Builder AI</h1>
- <span>Multipart intake • Creative assets • KPI framework • Trafficking handoff</span>
+ <span>Conversational intake • Media plan • Audience strategy • KPI framework • Delivery estimate</span>
 </header>
 <div class="app">
-<section class="chat-panel compact-chat">
+<section class="chat-panel">
  <div class="progress-wrap">
-  <div class="progress-label"><span id="stepLabel">Campaign Overview</span><span id="pct">0%</span></div>
+  <div class="progress-label"><span id="stepLabel">Client information</span><span id="pct">0%</span></div>
   <div class="progress"><div id="bar"></div></div>
-  <div class="section-stepper" id="sectionStepper"></div>
- </div>
- <div class="current-section-card">
-  <div class="section-eyebrow">Current section</div>
-  <div class="section-heading" id="currentSectionTitle">Campaign Overview</div>
-  <div class="section-help" id="currentSectionHelp">Start with the basic order details before moving into targeting and execution details.</div>
  </div>
  <div class="messages" id="messages"></div>
  <div class="input-row" id="inputRow">
@@ -460,57 +441,39 @@ const messages=document.getElementById("messages"),answer=document.getElementByI
 
 function baseFlow(){
  return[
-  // Campaign Overview
   {key:"ioType",q:"Is this a New IO or a Revised IO?",options:["New IO","Revised IO"]},
   {key:"existingOrderNumber",q:"What is the existing order number?",condition:()=>state.ioType==="Revised IO"},
   {key:"salesContact",q:"Who is the Sales / Contact person?"},
   {key:"salesEmail",q:"What is their email address?"},
   {key:"partner",q:"What is the media partner name?",default:"Smart 1 Marketing"},
+  {key:"sameDates",q:"Will every product use the same campaign start and end dates?",options:["Yes","No"]},
+  {key:"start",q:"What is the shared campaign start date? Use MM/DD/YYYY.",condition:()=>state.sameDates===true},
+  {key:"end",q:"What is the shared campaign end date? Use MM/DD/YYYY.",condition:()=>state.sameDates===true},
+  {key:"dayparting",q:"Is there any dayparting for the campaigns?",options:daypartOptions},
   {key:"client",q:"What is the client name?"},
-
-  // Brand Profile
   {key:"url",q:"What is the client's website URL?"},
   {key:"landingMode",q:"Will the campaign use one landing page or multiple landing pages?",options:["One landing page","Multiple landing pages by product"]},
   {key:"landingUrl",q:"What landing-page URL should be used for all products?",condition:()=>state.landingMode==="One landing page"},
-  {key:"industry",q:"What industry category best describes the client?"},
-  {key:"descriptionMode",q:"Would you like SMART1 to build the business description, or do you already have one?",options:["Build one for me","I have one"]},
-  {key:"description",q:"Enter the business description.",condition:()=>state.descriptionMode==="I have one"},
-  {key:"generatedDescription",q:"",condition:()=>state.descriptionMode==="Build one for me"},
-
-  // Target Audience
   {key:"geoType",q:"How should the geographic targeting area be defined?",options:["City/ZIP Code + Radius","DMA","Other"]},
   {key:"geoOrigin",q:"What city or ZIP Code should the radius start from?",condition:()=>state.geoType==="City/ZIP Code + Radius"},
   {key:"geoRadius",q:"What radius in miles should be used?",condition:()=>state.geoType==="City/ZIP Code + Radius"},
   {key:"geoZipcodes",q:"",condition:()=>state.geoType==="City/ZIP Code + Radius"},
   {key:"geoDMA",q:"What DMA should be targeted?",condition:()=>state.geoType==="DMA"},
   {key:"geoOther",q:"Please detail the geographic area that should be targeted.",condition:()=>state.geoType==="Other"},
+  {key:"industry",q:"What industry category best describes the client?"},
+  {key:"descriptionMode",q:"Would you like SMART1 to build the business description, or do you already have one?",options:["Build one for me","I have one"]},
+  {key:"description",q:"Enter the business description.",condition:()=>state.descriptionMode==="I have one"},
+  {key:"generatedDescription",q:"",condition:()=>state.descriptionMode==="Build one for me"},
+  {key:"objectives",q:"Which campaign goals apply? Select all that apply, then choose Continue.",multi:true,options:Object.keys(objectiveKPIs)},
+  {key:"kpis",q:"Which KPIs should define success? Select all that apply, or add the SMART1 recommendations, then choose Continue.",multi:true,dynamicOptions:allRecommendedKPIs},
   {key:"gender",q:"What gender should the campaign target?",options:["Male","Female","Both"]},
   {key:"ages",q:"Which age ranges should be targeted? Select all that apply, then choose Continue.",multi:true,options:["18-24","25-34","35-44","45-54","55-64","65+"]},
   {key:"income",q:"Which household income levels should be targeted? Select all that apply, then choose Continue.",multi:true,options:incomeOptions},
-
-  // Audience Strategy
-  {key:"objectives",q:"Which campaign goals apply? Select all that apply, then choose Continue.",multi:true,options:Object.keys(objectiveKPIs)},
   {key:"audiences",q:"Which audiences should be targeted? Select all that apply, or add the SMART1 suggestions, then choose Continue.",multi:true,dynamicOptions:suggestedAudienceOptions},
   {key:"audienceNotes",q:"Add any custom audience notes or type NONE."},
-
-  // Campaign Exclusions and Restrictions
-  {key:"exclusions",q:"Are there any exclusions, negative keywords, restricted audiences, placements, geographic areas, competitors, or other items we should be aware of? Type NONE if there are none."},
-
-  // Campaign Timeline and Products
-  {key:"sameDates",q:"Will every product use the same campaign start and end dates?",options:["Yes","No"]},
-  {key:"start",q:"What is the shared campaign start date? Use MM/DD/YYYY.",condition:()=>state.sameDates===true},
-  {key:"end",q:"What is the shared campaign end date? Use MM/DD/YYYY.",condition:()=>state.sameDates===true},
-  {key:"dayparting",q:"Is there any dayparting for the campaigns?",options:daypartOptions},
   {key:"productCategory",q:"Choose a product category.",options:productCategories},
   {key:"selected",q:"Choose all products needed from this category, then choose Continue.",multi:true,dynamicOptions:()=>productsForCategory(state.currentCategory)},
   {key:"moreCategory",q:"Would you like to add products from another category?",options:["Yes","No"]},
-
-  // Creative Assets
-  {key:"creativeSource",q:"Is Smart 1 building the creative, or is the creative being supplied?",options:["Smart 1 is building the creative","Creative is being supplied"]},
-  {key:"creativeAssetFlow",q:"Would you like to add creative assets or mark creative as coming later now?",options:["Open Creative Upload","Continue without creative"]},
-
-  // KPI Framework and Tracking
-  {key:"kpis",q:"Which KPIs should define success? Select all that apply, or add the SMART1 recommendations, then choose Continue.",multi:true,dynamicOptions:allRecommendedKPIs},
   {key:"primaryConversion",q:"What is the primary conversion the campaign should track?",options:conversionOptions},
   {key:"secondaryConversions",q:"Which secondary conversions should also be tracked? Select all that apply, then choose Continue.",multi:true,options:conversionOptions},
   {key:"ga4",q:"Is GA4 installed and accessible?",options:["Yes","No","Unknown"]},
@@ -523,57 +486,11 @@ function baseFlow(){
   {key:"frequencyCap",q:"What frequency cap should be used? Type AUTO to use the platform recommendation."},
   {key:"managementFee",q:"What management fee should be included? Enter an amount, percentage, INCLUDED, or NONE."},
   {key:"creativeFee",q:"What creative fee should be included? Enter an amount, INCLUDED, or NONE."},
-  {key:"specialInstructions",q:"Add any product or trafficking special instructions, or type NONE."}
+  {key:"specialInstructions",q:"Add any product or trafficking special instructions, or type NONE."},
+  {key:"creativeSource",q:"Is Smart 1 building the creative, or is the creative being supplied?",options:["Smart 1 is building the creative","Creative is being supplied"]},
+  {key:"exclusions",q:"Are there any exclusions, negative keywords, restricted audiences, placements, geographic areas, competitors, or other items we should be aware of? Type NONE if there are none."}
  ];
 }
-
-const formSections=[
- {id:"overview",title:"Campaign Overview",help:"Basic order, salesperson, partner, and client details.",keys:["ioType","existingOrderNumber","salesContact","salesEmail","partner","client"]},
- {id:"brand",title:"Brand Profile",help:"Website, landing page, industry, and business description.",keys:["url","landingMode","landingUrl","industry","descriptionMode","description","generatedDescription"]},
- {id:"target",title:"Target Audience",help:"Geography, demographics, and household targeting.",keys:["geoType","geoOrigin","geoRadius","geoZipcodes","geoDMA","geoOther","gender","ages","income"]},
- {id:"strategy",title:"Audience Strategy",help:"Campaign goals and audience strategy before restrictions.",keys:["objectives","audiences","audienceNotes"]},
- {id:"restrictions",title:"Exclusions & Restrictions",help:"Negative keywords, competitors, placement limits, and compliance notes.",keys:["exclusions"]},
- {id:"timeline",title:"Campaign Timeline",help:"Dates, dayparting, selected products, budgets, and rates.",keys:["sameDates","start","end","dayparting","productCategory","selected","moreCategory","productStart","productEnd","productLandingUrl","productBudget","productRate","productBudgetChanges","budgetChangeStart","budgetChangeEnd","budgetChangeAmount","moreBudgetChanges","completeProduct"]},
- {id:"creative",title:"Creative Assets",help:"Creative source, uploads, evergreen status, specs, and coming-later items.",keys:["creativeSource","creativeAssetFlow"]},
- {id:"kpi",title:"KPI Framework",help:"KPIs, conversions, tracking readiness, campaign ownership, and fees.",keys:["kpis","primaryConversion","secondaryConversions","ga4","gtm","callTracking","thankYouPage","offlineImport","verifier","campaignOwner","frequencyCap","managementFee","creativeFee","specialInstructions"]}
-];
-let activeSectionId="";
-function sectionForKey(key){
- const found=formSections.find(s=>s.keys.includes(key));
- return found||formSections[0];
-}
-function setActiveSection(section){
- if(!section)return;
- if(activeSectionId!==section.id){
-  activeSectionId=section.id;
-  messages.innerHTML="";
-  const div=document.createElement("div");
-  div.className="section-break";
-  div.textContent=section.title;
-  messages.appendChild(div);
- }
- const title=document.getElementById("currentSectionTitle");
- const help=document.getElementById("currentSectionHelp");
- if(title)title.textContent=section.title;
- if(help)help.textContent=section.help;
- renderSectionStepper(section.id);
-}
-function renderSectionStepper(activeId){
- const wrap=document.getElementById("sectionStepper");
- if(!wrap)return;
- const activeIndex=formSections.findIndex(s=>s.id===activeId);
- wrap.innerHTML=formSections.map((s,i)=>`<span class="section-pill ${s.id===activeId?'active':i<activeIndex?'done':''}">${i+1}. ${esc(s.title)}</span>`).join("");
-}
-function trimMessages(){
- const keep=10;
- const nodes=[...messages.children].filter(n=>!n.classList.contains("section-break"));
- while(nodes.length>keep){
-  const first=nodes.shift();
-  if(first&&first.parentNode)first.parentNode.removeChild(first);
- }
-}
-
-
 function nextValidIndex(i){
  while(i<flow.length && flow[i].condition && !flow[i].condition())i++;
  return i;
@@ -760,7 +677,7 @@ async function allocateOrderNumber(){
 }
 
 function addMsg(text,who="bot"){
- const d=document.createElement("div");d.className="msg "+who;d.textContent=text;messages.appendChild(d);trimMessages();messages.scrollTop=messages.scrollHeight
+ const d=document.createElement("div");d.className="msg "+who;d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight
 }
 function showOptions(opts){
  document.querySelectorAll(".quick").forEach(x=>x.remove());
@@ -836,8 +753,7 @@ function showMultiOptions(q,opts){
 function completeMultiQuestion(q){
  if(selectedCountFor(q)<1){addMsg("Please select at least one option before continuing.");return}
  document.querySelectorAll(".multi-panel").forEach(x=>x.remove());
- index++;render();renderSectionStepper("overview");
-ask();
+ index++;render();ask();
 }
 function question(){
  index=nextValidIndex(index);
@@ -881,7 +797,6 @@ function ask(){
  let q=question();
  if(!q){finish();return}
  if(q.key==="completeProduct"){completeProduct();return}
- setActiveSection(sectionForKey(q.key));
  updateProgress();
  let text=q.q;
  if(q.key==="geoZipcodes"&&state.geoZipcodes)q={...q,suggestion:state.geoZipcodes,q:`ZIP Codes found:\n${state.geoZipcodes}\n\nType Y to use this list, or edit the comma-separated ZIP Codes.`};
@@ -911,10 +826,17 @@ function ask(){
  if(isDate){
    const today=new Date();
    const localToday=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
-   if(!answer.value)answer.value=localToday;
+   const isChange=(q.key==="budgetChangeStart"||q.key==="budgetChangeEnd");
+   const preset=isChange?defaultDateForKey(q.key):"";
+   if(!answer.value)answer.value=preset||localToday;
+   if(isChange){
+     const win=productDateWindow();
+     if(win.start)answer.min=win.start;else answer.removeAttribute("min");
+     if(win.end)answer.max=win.end;else answer.removeAttribute("max");
+   }else{answer.removeAttribute("min");answer.removeAttribute("max");}
    answer.setAttribute("aria-label","Choose campaign date");
  }else{
-   answer.removeAttribute("aria-label");
+   answer.removeAttribute("aria-label");answer.removeAttribute("min");answer.removeAttribute("max");
  }
  answer.focus();
  messages.scrollTop=messages.scrollHeight;
@@ -1034,15 +956,6 @@ async function submit(raw){
  }
  
  
- 
- if(q.key==="creativeAssetFlow"){
-  if(val==="Open Creative Upload"){
-   openCreativeManager();
-   addMsg("The Creative Upload window is open. Add files, assign products, mark evergreen, or use Coming Later. Close it when finished; the form will continue to KPI Framework.");
-  }
-  index++;render();ask();return
- }
-
  if(["primaryConversion","ga4","gtm","callTracking","thankYouPage","offlineImport","verifier"].includes(q.key)){
   state.trackingPlan[q.key]=val;index++;render();ask();return
  }
@@ -1052,8 +965,20 @@ async function submit(raw){
   if(!tempItem.budgetChangesAsked)tempItem.pendingBudgetChange=null;
   ask();return
  }
- if(q.key==="budgetChangeStart"){tempItem.pendingBudgetChange.start=val;ask();return}
- if(q.key==="budgetChangeEnd"){tempItem.pendingBudgetChange.end=val;ask();return}
+ if(q.key==="budgetChangeStart"){
+  const win=productDateWindow();
+  if((win.start&&val<win.start)||(win.end&&val>win.end)){addMsg(`Please choose a start date inside the campaign window (${win.start||"?"} to ${win.end||"?"}).`);ask();return}
+  const prev=(tempItem.budgetChanges||[]).slice(-1)[0];
+  if(prev&&prev.end&&val<=prev.end){addMsg(`This budget period has to start after the previous one ends (${prev.end}). Pick a later date.`);ask();return}
+  tempItem.pendingBudgetChange.start=val;ask();return
+ }
+ if(q.key==="budgetChangeEnd"){
+  const win=productDateWindow();
+  const s=tempItem.pendingBudgetChange.start;
+  if(s&&val<s){addMsg(`The end date must be on or after the start date (${s}).`);ask();return}
+  if(win.end&&val>win.end){addMsg(`The end date can't be after the campaign end (${win.end}).`);ask();return}
+  tempItem.pendingBudgetChange.end=val;ask();return
+ }
  if(q.key==="budgetChangeAmount"){tempItem.pendingBudgetChange.budget=num(val);ask();return}
  if(q.key==="moreBudgetChanges"){
   tempItem.budgetChanges.push({...tempItem.pendingBudgetChange});
@@ -1193,6 +1118,20 @@ function calculateGuardrails(){
  return warnings;
 }
 
+function productDateWindow(){
+ if(typeof tempItem==="undefined"||!tempItem)return {start:"",end:""};
+ return {start:(state.sameDates?state.start:(tempItem.start||"")),end:(state.sameDates?state.end:(tempItem.end||""))};
+}
+function defaultDateForKey(key){
+ const win=productDateWindow();
+ if(key==="budgetChangeStart"){
+  const prev=((tempItem&&tempItem.budgetChanges)||[]).slice(-1)[0];
+  if(prev&&prev.end){const d=new Date(prev.end);d.setDate(d.getDate()+1);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
+  return win.start||"";
+ }
+ if(key==="budgetChangeEnd")return win.end||"";
+ return "";
+}
 function activeMonthlyBudget(item,date){
  const t=new Date(date).getTime();
  const change=(item.budgetChanges||[]).find(c=>{

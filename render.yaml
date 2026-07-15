@@ -3,7 +3,7 @@ services:
     name: insertionordersmart
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --timeout 180 --workers 2 --threads 4
     envVars:
       - key: ORDER_COUNTER_CLOUDINARY_ID
         value: smart1_system/order_counter.json
