@@ -182,15 +182,17 @@ def generate_business_description():
     prompt = (
         'Research this business carefully using its official website and any clearly authoritative pages linked from it: '
         + ', '.join(urls) + '.\n'
-        'Write a comprehensive internal business description for the person who will execute a digital advertising campaign. '
-        'Use approximately 2 to 5 short paragraphs. Explain what the company does, its main products and services, the customer problems it solves, '
-        'who its likely customers are, its service area or locations, important differentiators, offers or conversion paths visible on the site, '
-        'and any operational details that would help a media buyer understand the business. '
-        'Mention regulated or restricted categories when relevant. Do not invent unsupported claims, awards, service areas, years in business, or capabilities. '
-        'Do not include citations or raw URLs in the final text.\n'
+        'Write a customer-facing business description suitable for a Google Business Profile "from the business" section. '
+        'Requirements: write in third person about the business; keep it to roughly 500 to 750 characters (Google allows up to 750); '
+        'clearly describe what the business offers, the products or services provided, who it serves, the areas or locations it serves, '
+        'and what makes it a good choice, using natural language a prospective customer would find helpful. '
+        'Follow Google Business Profile content rules: do NOT include URLs or website links, phone numbers, prices, promotional or sales language '
+        '(no "call now", "best", "#1", discounts, or offers), special characters, or ALL-CAPS gimmicks. Keep it factual and professional. '
+        'Do not invent unsupported claims, awards, service areas, years in business, or capabilities. '
+        'Do not include citations or raw URLs.\n'
         f'Known intake details:\nClient name: {client}\nIndustry: {industry}\nGeographic target: {geography}\n'
         f'Brandfetch description: {brand.get("description", "") if isinstance(brand, dict) else ""}\n'
-        'Return only the finished business description.'
+        'Return only the finished Google Business Profile description.'
     )
     try:
         description = _openai_response(prompt, max_output_tokens=5000)
@@ -231,31 +233,40 @@ def _cloudinary_is_configured():
     cfg = cloudinary.config()
     return bool(cfg.cloud_name and cfg.api_key and cfg.api_secret)
 
+ORDER_COUNTER_BASE = 10199  # first allocated order is BASE + 1 = 10200
+
+def _is_not_found(exc):
+    message = str(exc).lower()
+    return "not found" in message or "404" in message or "resource not found" in message
+
 def _read_cloudinary_order_counter():
-    """Read the last allocated order number from a private system JSON asset."""
+    """Return the last allocated order number.
+
+    Reads the value from the asset's *context metadata* via the Admin API, which
+    does not require raw-file delivery (raw/PDF delivery is disabled by default on
+    many Cloudinary accounts and is the usual reason the old body-fetch approach
+    failed). Falls back to fetching the JSON body only if context is unavailable.
+    Raises on a genuine not-found so the caller can treat it as the first run.
+    """
     public_id = _cloudinary_counter_public_id()
-    try:
-        resource = cloudinary.api.resource(public_id, resource_type="raw", type="upload")
-        url = resource.get("secure_url")
-        if not url:
-            return 10199
-        response = requests.get(
-            url,
-            params={"cb": str(int(time.time() * 1000))},
-            timeout=20,
-            headers={"Cache-Control": "no-cache"},
-        )
+    resource = cloudinary.api.resource(public_id, resource_type="raw", type="upload", context=True)
+    context = (resource.get("context") or {})
+    custom = context.get("custom") or context  # Admin API nests under "custom"
+    value = custom.get("last_order_number") if isinstance(custom, dict) else None
+    if value not in (None, ""):
+        return int(value)
+    # Fallback: try to read the file body (works only if raw delivery is enabled).
+    url = resource.get("secure_url")
+    if url:
+        response = requests.get(url, params={"cb": str(int(time.time() * 1000))}, timeout=20,
+                                headers={"Cache-Control": "no-cache"})
         response.raise_for_status()
-        stored = response.json()
-        return int(stored.get("last_order_number", 10199))
-    except Exception as exc:
-        # A missing asset is expected the first time the app creates order 10200.
-        message = str(exc).lower()
-        if "not found" not in message and "404" not in message:
-            logger.warning("Unable to read Cloudinary order counter: %s", exc)
-        return 10199
+        return int(response.json().get("last_order_number", ORDER_COUNTER_BASE))
+    return ORDER_COUNTER_BASE
 
 def _write_cloudinary_order_counter(number):
+    """Persist the counter both as context metadata (delivery-independent) and as
+    the file body. Raises if the upload itself fails so the caller can fall back."""
     public_id = _cloudinary_counter_public_id()
     payload = json.dumps({
         "last_order_number": int(number),
@@ -273,7 +284,7 @@ def _write_cloudinary_order_counter(number):
             overwrite=True,
             unique_filename=False,
             use_filename=False,
-            invalidate=True,
+            context={"last_order_number": str(int(number))},
             tags=["smart1_system", "smart1_order_counter"],
         )
     finally:
@@ -288,34 +299,58 @@ def _temporary_counter_path():
         "/tmp/smart1_order_counter.json"
     ))
 
-def _next_temporary_order_number():
-    """Emergency fallback only. This can reset after a Render restart."""
+def _read_temp_counter():
     path = _temporary_counter_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    current = 10199
     if path.exists():
         try:
-            current = int(json.loads(path.read_text(encoding="utf-8")).get("last_order_number", current))
+            return int(json.loads(path.read_text(encoding="utf-8")).get("last_order_number", ORDER_COUNTER_BASE))
         except Exception:
             logger.exception("Unable to read temporary order counter")
-    next_number = current + 1
-    path.write_text(json.dumps({"last_order_number": next_number}), encoding="utf-8")
-    return next_number
+    return ORDER_COUNTER_BASE
+
+def _write_temp_counter(number):
+    path = _temporary_counter_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"last_order_number": int(number)}), encoding="utf-8")
+    except Exception:
+        logger.exception("Unable to write temporary order counter")
 
 def _next_order_number():
-    """Return the next order number, beginning with 10200."""
+    """Return (order_number, storage, warning). Never raises for storage reasons —
+    the salesperson always receives a usable number so the IO can proceed."""
     with _ORDER_LOCK:
         if _cloudinary_is_configured():
-            current = _read_cloudinary_order_counter()
-            next_number = current + 1
-            _write_cloudinary_order_counter(next_number)
-            return str(next_number), "cloudinary", ""
+            # Determine the current value from Cloudinary, tolerating a missing asset.
+            try:
+                current = _read_cloudinary_order_counter()
+            except Exception as exc:
+                if _is_not_found(exc):
+                    current = ORDER_COUNTER_BASE  # first ever allocation -> 10200
+                else:
+                    logger.warning("Cloudinary counter read failed, using temporary storage: %s", exc)
+                    current = None  # signal read failure
 
-        next_number = _next_temporary_order_number()
-        warning = (
-            "Cloudinary is not configured, so the order number is using temporary "
-            "Render storage and may reset after a restart."
-        )
+            if current is not None:
+                # Keep the temp mirror in step so a later Cloudinary outage stays continuous.
+                current = max(current, _read_temp_counter())
+                next_number = current + 1
+                try:
+                    _write_cloudinary_order_counter(next_number)
+                    _write_temp_counter(next_number)
+                    return str(next_number), "cloudinary", ""
+                except Exception as exc:
+                    logger.warning("Cloudinary counter write failed, using temporary storage: %s", exc)
+                    _write_temp_counter(next_number)
+                    return (str(next_number), "temporary",
+                            "The order number was issued but could not be saved to Cloudinary, "
+                            "so it is being tracked in temporary storage. Verify it is unique before finalizing.")
+
+        # No Cloudinary (or read failed): use the temporary counter.
+        next_number = _read_temp_counter() + 1
+        _write_temp_counter(next_number)
+        warning = ("The order number is using temporary storage and may reset after a "
+                   "server restart. Confirm it is unique before finalizing the IO.")
         return str(next_number), "temporary", warning
 
 @app.post("/api/next-order-number")
@@ -329,8 +364,17 @@ def next_order_number():
             "warning": warning,
         })
     except Exception as exc:
+        # Last-resort safety net: even on an unexpected error, hand back a usable
+        # timestamp-based number so the salesperson is never fully blocked.
         logger.exception("Order number allocation failed")
-        return jsonify({"ok": False, "error": str(exc)}), 500
+        fallback = str(ORDER_COUNTER_BASE + 1 + int(time.time()) % 100000)
+        return jsonify({
+            "ok": True,
+            "order_number": fallback,
+            "storage": "fallback",
+            "warning": "Order number storage is unavailable; a temporary number was generated. "
+                       "Confirm it is unique before finalizing the IO.",
+        })
 
 def _safe_filename(value):
     cleaned = ''.join(ch if ch.isalnum() or ch in (' ', '-', '_') else ' ' for ch in str(value or '')).strip()
