@@ -548,6 +548,24 @@ def _build_requirements_pdf(data, doc_type):
     return buf.getvalue(), title
 
 
+def _store_requirements_pdf(data, doc_type):
+    """Build the PDF and upload it to Cloudinary. Returns the upload result dict."""
+    pdf_bytes, title = _build_requirements_pdf(data, doc_type)
+    client = _safe_filename(data.get('client'))
+    start = _safe_filename(data.get('start') or 'no start date')
+    folder = f"smart1_campaigns/{client}/{start}/documents"
+    result = cloudinary.uploader.upload(
+        BytesIO(pdf_bytes),
+        resource_type='image',
+        format='pdf',
+        public_id=title,
+        folder=folder,
+        overwrite=True,
+        unique_filename=False,
+        tags=[client, start, 'smart1_requirements_pdf', doc_type],
+    )
+    return result, title
+
 @app.post('/api/generate-requirements-pdf')
 def generate_requirements_pdf():
     cfg = cloudinary.config()
@@ -558,24 +576,41 @@ def generate_requirements_pdf():
     if doc_type not in ('client','internal'):
         return jsonify({'error':'documentType must be client or internal'}), 400
     try:
-        pdf_bytes, title = _build_requirements_pdf(data, doc_type)
-        client = _safe_filename(data.get('client'))
-        start = _safe_filename(data.get('start') or 'no start date')
-        folder = f"smart1_campaigns/{client}/{start}/documents"
-        result = cloudinary.uploader.upload(
-            BytesIO(pdf_bytes),
-            resource_type='image',
-            format='pdf',
-            public_id=title,
-            folder=folder,
-            overwrite=True,
-            unique_filename=False,
-            tags=[client, start, 'smart1_requirements_pdf', doc_type],
-        )
+        result, title = _store_requirements_pdf(data, doc_type)
         return jsonify({'url': result.get('secure_url'), 'public_id': result.get('public_id'), 'filename': title + '.pdf'})
     except Exception as exc:
         logger.exception('PDF generation failed')
         return jsonify({'error':'PDF generation failed','detail':str(exc)}), 500
+
+
+def _generate_named_pdf(doc_type):
+    """Shared handler for the client/internal PDF routes used by Submit Finished IO.
+    Returns the ok/url shape the front end expects."""
+    cfg = cloudinary.config()
+    if not cfg.cloud_name or not cfg.api_key or not cfg.api_secret:
+        return jsonify({'ok': False, 'error': 'Cloudinary is not configured'}), 503
+    data = request.get_json(force=True) or {}
+    try:
+        result, title = _store_requirements_pdf(data, doc_type)
+        url = result.get('secure_url')
+        return jsonify({
+            'ok': True,
+            'url': url,
+            'secure_url': url,
+            'public_id': result.get('public_id'),
+            'filename': title + '.pdf',
+        })
+    except Exception as exc:
+        logger.exception('%s PDF generation failed', doc_type)
+        return jsonify({'ok': False, 'error': f'{doc_type} PDF generation failed', 'detail': str(exc)}), 500
+
+@app.post('/api/generate-client-pdf')
+def generate_client_pdf():
+    return _generate_named_pdf('client')
+
+@app.post('/api/generate-internal-pdf')
+def generate_internal_pdf():
+    return _generate_named_pdf('internal')
 
 
 @app.errorhandler(Exception)
@@ -601,10 +636,31 @@ def submit_io():
             "error": "Both the client PDF URL and internal PDF URL are required before the IO can be submitted."
         }), 400
 
+    # Compute opportunity-friendly summary fields so GoHighLevel can map an
+    # Opportunity Name and Lead Value without digging into nested campaign_data.
+    def _num(value):
+        try:
+            return float(value or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    items = data.get("items", []) or []
+    monthly_budget = round(sum(_num(i.get("budget")) for i in items if isinstance(i, dict)), 2)
+    total_campaign_budget = round(sum(_num(i.get("campaignBudget")) for i in items if isinstance(i, dict)), 2)
+    order_number = data.get("orderNumber") or ""
+    opportunity_name = " - ".join([str(p) for p in [
+        data.get("client"), data.get("ioType"),
+        (f"Order {order_number}" if order_number else None)
+    ] if p])
+
     # Keep the full record, while also exposing commonly mapped fields at the top level.
     payload = {
         "event": "smart1_io_completed",
         "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "order_number": order_number,
+        "opportunity_name": opportunity_name,
+        "lead_value": total_campaign_budget,
+        "monthly_budget": monthly_budget,
+        "total_campaign_budget": total_campaign_budget,
         "io_type": data.get("ioType"),
         "client_name": data.get("client"),
         "client_website": data.get("url"),
