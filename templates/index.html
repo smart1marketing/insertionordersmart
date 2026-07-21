@@ -339,6 +339,23 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:1}
 
 <script>
 
+// --- API base override for embedded deployments ---
+// When this page is embedded on another domain (e.g. WordPress) while the API
+// runs on Render, set  window.SMART1_API_BASE = "https://<your-app>.onrender.com"
+// BEFORE this script loads. All /api/* calls are then sent to that origin.
+// Leave it unset when the page is served directly by the app (default behavior).
+const API_BASE=(typeof window!=="undefined"&&window.SMART1_API_BASE)?String(window.SMART1_API_BASE).replace(/\/+$/,""):"";
+if(API_BASE&&typeof window!=="undefined"&&window.fetch){
+  const _origFetch=window.fetch.bind(window);
+  window.fetch=function(input,init){
+    try{
+      if(typeof input==="string"&&input.indexOf("/api/")===0){input=API_BASE+input;}
+      else if(input&&typeof input.url==="string"&&input.url.indexOf("/api/")===0){input=new Request(API_BASE+input.url,input);}
+    }catch(e){}
+    return _origFetch(input,init);
+  };
+}
+
 const conversionOptions=["Form completion","Phone calls","Purchases","Directions","Appointments","Store visits","Promo-code usage","Offline sales","Revenue tracking","CRM status feedback"];
 
 const objectiveKPIs={
@@ -683,9 +700,26 @@ function renderMediaMix(){
 
 async function allocateOrderNumber(){
  if(state.orderNumber)return state.orderNumber;
- const response=await fetch("/api/next-order-number",{method:"POST"});
+ // Retry on network-level failures ("Failed to fetch"), which usually mean the
+ // server is cold-starting/waking or briefly redeploying rather than truly down.
+ let response,lastErr;
+ for(let attempt=1;attempt<=3;attempt++){
+  try{
+   response=await fetch("/api/next-order-number",{method:"POST",headers:{"Content-Type":"application/json"}});
+   break;
+  }catch(err){
+   lastErr=err;
+   if(attempt<3){addMsg("The order service didn’t respond; waking it and retrying…");await new Promise(r=>setTimeout(r,4000*attempt));}
+  }
+ }
+ if(!response){
+  const msg=(lastErr&&/failed to fetch|networkerror/i.test(lastErr.message||""))
+   ?"Could not reach the order service — it may still be starting up or is blocked. Wait a moment and try again."
+   :("Order service unreachable: "+((lastErr&&lastErr.message)||"unknown network error"));
+  throw new Error(msg);
+ }
  const result=await response.json().catch(()=>({}));
- if(!response.ok||!result.ok||!result.order_number)throw new Error(result.error||"Unable to create an order number.");
+ if(!response.ok||!result.ok||!result.order_number)throw new Error(result.error||`The order service responded with status ${response.status}.`);
  state.orderNumber=String(result.order_number);
  state.orderNumberStorage=result.storage||"";
  if(result.warning){

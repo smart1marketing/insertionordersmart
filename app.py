@@ -8,6 +8,7 @@ import os
 import logging
 from pathlib import Path
 from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 import cloudinary
 import cloudinary.utils
 import cloudinary.uploader
@@ -32,6 +33,18 @@ BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__, template_folder=str(BASE_DIR / 'templates'))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Cross-origin support. The IO builder page can be embedded on another domain
+# (e.g. test.smart1marketing.com) while the API runs on Render, which makes the
+# browser's /api calls cross-origin and blocks them ("Failed to fetch") unless
+# the server returns CORS headers and answers preflight (OPTIONS) requests.
+# ALLOWED_ORIGINS: "*" (default) or a comma-separated list of allowed origins.
+_allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "*").strip()
+if _allowed_origins_env in ("", "*"):
+    _cors_origins = "*"
+else:
+    _cors_origins = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}}, methods=["GET", "POST", "OPTIONS"])
 
 # Set CLOUDINARY_URL in the environment. Never place the API secret in browser JavaScript.
 cloudinary.config(secure=True)
