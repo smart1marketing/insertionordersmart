@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import os
 import logging
 from pathlib import Path
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 from flask_cors import CORS
 import cloudinary
 import cloudinary.utils
@@ -616,6 +616,27 @@ def _generate_named_pdf(doc_type):
     except Exception as exc:
         logger.exception('%s PDF generation failed', doc_type)
         return jsonify({'ok': False, 'error': f'{doc_type} PDF generation failed', 'detail': str(exc)}), 500
+
+@app.post('/api/download-requirements-pdf')
+def download_requirements_pdf():
+    """Return the PDF bytes directly as a download. Does NOT depend on Cloudinary
+    (Cloudinary PDF/raw delivery is disabled by default on many accounts), so the
+    Customer/Internal PDF buttons work regardless of Cloudinary delivery settings."""
+    data = request.get_json(force=True) or {}
+    doc_type = str(data.get('documentType') or 'client').lower()
+    if doc_type not in ('client', 'internal'):
+        return jsonify({'error': 'documentType must be client or internal'}), 400
+    try:
+        pdf_bytes, title = _build_requirements_pdf(data, doc_type)
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=(title + '.pdf'),
+        )
+    except Exception as exc:
+        logger.exception('PDF download failed')
+        return jsonify({'error': 'PDF generation failed', 'detail': str(exc)}), 500
 
 @app.post('/api/generate-client-pdf')
 def generate_client_pdf():

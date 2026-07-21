@@ -572,7 +572,7 @@ async function fetchZipcodesForRadius(){
 }
 async function reviewLandingPage(url,product){
  if(!url)return;
- addMsg(`Reviewing the landing page for ${product||"the campaign"}…`);
+ addMsg(`Reviewing the landing page for ${product||"the campaign"} in the background — you can keep going; the result will be added to the internal report when it's ready.`);
  try{
   const res=await fetch("/api/review-landing-page",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url,client:state.client,product,objectives:state.objectives})});
   const data=await res.json().catch(()=>({}));
@@ -961,7 +961,7 @@ async function submit(raw){
  }
  if(q.key==="productStart"){tempItem.start=val;ask();return}
  if(q.key==="productEnd"){tempItem.end=val;ask();return}
- if(q.key==="productLandingUrl"){tempItem.landingUrl=val;await reviewLandingPage(val,(productConfig[tempItem.product]||{}).product||tempItem.product);ask();return}
+ if(q.key==="productLandingUrl"){tempItem.landingUrl=val;reviewLandingPage(val,(productConfig[tempItem.product]||{}).product||tempItem.product);ask();return}
 
  
  if(q.key==="objectives"){
@@ -1055,7 +1055,7 @@ async function submit(raw){
 
  state[q.key]=val.toUpperCase()==="NONE"?"":val;
  if(q.key==="url"){await fetchBrandfetchData(state.url)}
- if(q.key==="landingUrl"){await reviewLandingPage(state.landingUrl,"Shared campaign landing page")}
+ if(q.key==="landingUrl"){reviewLandingPage(state.landingUrl,"Shared campaign landing page")}
  if(q.key==="geoOrigin"||q.key==="geoRadius"){
    if(q.key==="geoRadius")await fetchZipcodesForRadius();
  }
@@ -1853,13 +1853,14 @@ async function generateStoredPDF(type){
  if(!state.client){alert('Enter the client name first.');return}
  buildStrategy();render();
  const totalCampaignBudget=state.items.reduce((s,i)=>s+(i.campaignBudget||0),0);const monthlySpend=state.items.reduce((s,i)=>s+(i.budget||0),0);const payload={...state,monthlySpendFormatted:money(monthlySpend),totalCampaignBudgetFormatted:money(totalCampaignBudget),documentType:type,brandfetch:state.brandfetch,creativeAssets:state.creativeAssets.map(a=>({...a,productLabel:(productConfig[a.product]||{}).product||a.product})),customerRequirements:customerRequirementItems(),internalRequirements:internalRequirementSections()};
+ const label=type==='internal'?'Internal requirements':'Customer PDF';
  try{
-  const r=await fetch('/api/generate-requirements-pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  const d=await r.json();if(!r.ok)throw new Error(d.detail||d.error||'PDF creation failed');
-  const label=type==='internal'?'Internal requirements':'Customer PDF';
-  state.generatedDocuments[type]={url:d.url,filename:d.filename,publicId:d.public_id,createdAt:new Date().toISOString()};render();
-  addMsg(`${label} created and stored in Cloudinary: ${d.url}`);
-  window.open(d.url,'_blank');
+  const r=await fetch('/api/download-requirements-pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(!r.ok){let msg='PDF creation failed';try{const d=await r.json();msg=d.detail||d.error||msg}catch(e){}throw new Error(msg)}
+  const blob=await r.blob();
+  const fname=(state.client||'Client').replace(/[^a-z0-9]/gi,'_')+(type==='internal'?'_SMART1_Internal.pdf':'_SMART1_Customer.pdf');
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  addMsg(`${label} downloaded as ${fname}.`);
  }catch(e){alert(`Unable to create PDF: ${e.message}`)}
 }
 
